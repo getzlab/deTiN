@@ -7,9 +7,11 @@ import deTiN_utilities as du
 import deTiN_SSNV_based_estimate as dssnv
 import deTiN_aSCNA_based_estimate as dascna
 
+
 class deTiN_input:
     """class which holds the required detin somatic data prior to model"""
-    def __init__(self,args):
+
+    def __init__(self, args):
 
         # related to inputs from command line
         self.call_stats_file = args.mutation_data_path
@@ -36,9 +38,27 @@ class deTiN_input:
         self.call_stats_table['genomic_coord_x'] = du.hg19_to_linear_positions(
             np.array(self.call_stats_table['Chromosome']), np.array(self.call_stats_table['position']))
         self.n_calls_in = len(self.call_stats_table)
+
     def read_het_file(self):
-        tumor_het_table = pd.read_csv(self.tumor_het_file,'\t', index_col=False,low_memory=False)
-        normal_het_table = pd.read_csv(self.normal_het_file,'\t',index_col=False,low_memory=False)
+        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False)
+        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False)
+
+        if type(tumor_het_table['CONTIG'][0]) == str:
+            tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
+        else:
+            tumor_het_table['Chromosome'] = np.array(tumor_het_table['CONTIG'])
+
+        if type(normal_het_table['CONTIG'][0]) == str:
+            normal_het_table['Chromosome'] = du.chr2num(np.array(normal_het_table['CONTIG']))
+        else:
+            normal_het_table['Chromosome'] = np.array(normal_het_table['CONTIG'])
+        tumor_het_table = tumor_het_table[np.isfinite(tumor_het_table['Chromosome'])]
+        tumor_het_table['genomic_coord_x'] = du.hg19_to_linear_positions(np.array(tumor_het_table['Chromosome']),
+                                                                         np.array(tumor_het_table['POSITION']))
+        normal_het_table = normal_het_table[np.isfinite(normal_het_table['Chromosome'])]
+        normal_het_table['genomic_coord_x'] = du.hg19_to_linear_positions(np.array(normal_het_table['Chromosome']),
+                                                                          np.array(normal_het_table['POSITION']))
+        self.het_table = pd.merge(normal_het_table, tumor_het_table, on='genomic_coord_x', suffixes=('_N', '_T'))
 
     def read_seg_file(self):
         self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False)
@@ -56,9 +76,10 @@ class deTiN_input:
         tau = np.zeros([self.n_calls_in, 1]) + 2
         for i, r in self.seg_table.iterrows():
             f_acs[np.logical_and(np.array(self.call_stats_table['genomic_coord_x']) >= r['genomic_coord_start'],
-                               np.array(self.call_stats_table['genomic_coord_x']) <= r['genomic_coord_end'])] = r.f
+                                 np.array(self.call_stats_table['genomic_coord_x']) <= r['genomic_coord_end'])] = r.f
             tau[np.logical_and(np.array(self.call_stats_table['genomic_coord_x']) >= r['genomic_coord_start'],
-                               np.array(self.call_stats_table['genomic_coord_x']) <= r['genomic_coord_end'])] = r.tau + 0.001
+                               np.array(self.call_stats_table['genomic_coord_x']) <= r[
+                                   'genomic_coord_end'])] = r.tau + 0.001
         self.call_stats_table['tau'] = tau
         self.call_stats_table['f_acs'] = f_acs
 
@@ -67,9 +88,13 @@ class deTiN_input:
         self.read_seg_file()
         self.annotate_call_stats_with_allelic_cn_data()
 
+
 class deTiN_output:
     """class which holds output from deTiN's models"""
+
+
 __version__ = '1.0'
+
 
 def main():
     """ Main execution engine of deTiN. Method operates in two stages (1) estimating tumor in normal via candidate SSNVs and SCNAS.
@@ -91,22 +116,22 @@ def main():
                         help='Path to heterozygous site allele count data in normal.'
                              'Required columns: CONTIG,POS,REF_COUNT and ALT_COUNT', required=True)
     parser.add_argument('--exac_data_path',
-                        help='Path to exac vcf file or pickle.',required=True)
+                        help='Path to exac vcf file or pickle.', required=True)
     parser.add_argument('--output_name', required=True,
                         help='sample name')
     parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
-                                                 , required=False, default=0.08)
+                        , required=False, default=0.08)
     parser.add_argument('--mutation_data_source',
                         help='Variant caller used.'
                              'Supported values: mutect,strelka,varscan,and somaticsniper', required=False,
                         default='MuTect')
 
-    parser.add_argument('--TiN_prior',help='expected frequency of TiN contamination in sequencing setting',
+    parser.add_argument('--TiN_prior', help='expected frequency of TiN contamination in sequencing setting',
                         required=False, default=0.1)
-    parser.add_argument('--output_dir',help='directory to put plots and TiN solution',required=False,default='.')
+    parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
 
     args = parser.parse_args()
-    di=deTiN_input(args)
+    di = deTiN_input(args)
     di.read_and_preprocess_data()
 
     # identify candidate mutations based on MuTect flags.
@@ -114,11 +139,11 @@ def main():
     di.candidates = du.select_candidate_mutations(di.call_stats_table)
 
     # generate SSNV based model using candidate sites
-    ssnv_based_model = dssnv.model(di.candidates,di.mutation_prior)
+    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior)
     ssnv_based_model.perform_inference()
 
     # generate aSCNA based model
-    ascna_based_model = dascna.model(di.seg_table,di.het_table)
+    ascna_based_model = dascna.model(di.seg_table, di.het_table)
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)
