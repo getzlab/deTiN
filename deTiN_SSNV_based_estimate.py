@@ -115,5 +115,6 @@ class model:
             TiN_last = self.TiN
             self.expectation_of_z_given_TiN()
             self.maximize_TiN_likelihood()
-            print 'TiN inference after '+str(iteration)+' iterations = '+str(self.TiN)
-        print 'SSNV based TiN estimate converged: TiN = ' +str(self.TiN)
+            print 'TiN inference after '+str(iteration)+' iterations = '+str(self.TiN_range[self.TiN])
+        print 'SSNV based TiN estimate converged: TiN = ' +str(self.TiN_range[self.TiN])
+        self.TiN = self.TiN_range[self.TiN]
