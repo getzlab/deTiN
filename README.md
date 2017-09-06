@@ -4,7 +4,7 @@ DeTiN estimates tumor in normal (TiN) based on tumor and matched normal sequenci
 
 ## Code Example
 
-/Users/amaro/anaconda/bin/python /Users/amaro/PycharmProjects/deTiN/deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_annotated.txt --cn_data_path example_data/HCC-1143_100_T.tsv --tumor_het_data example_data/HCC_10_90.tumor.hets.tsv --normal_het_data example_data/HCC_10_90.normal.hets.tsv --exac_data_path example_data/ExAC.vcf --output_name 10_percent_TiN_simulation
+python deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_annotated.txt --cn_data_path example_data/HCC-1143_100_T.tsv --tumor_het_data example_data/HCC_10_90.tumor.hets.tsv --normal_het_data example_data/HCC_10_90.normal.hets.tsv --exac_data_path example_data/ExAC.vcf --output_name 10_percent_TiN_simulation
 
 ## Motivation
 
