@@ -58,6 +58,10 @@ class deTiN_input:
         normal_het_table = normal_het_table[np.isfinite(normal_het_table['Chromosome'])]
         normal_het_table['genomic_coord_x'] = du.hg19_to_linear_positions(np.array(normal_het_table['Chromosome']),
                                                                           np.array(normal_het_table['POSITION']))
+        tumor_het_table['AF'] = np.true_divide(tumor_het_table['ALT_COUNT'],
+                                               tumor_het_table['ALT_COUNT']+tumor_het_table['REF_COUNT'])
+        normal_het_table['AF'] = np.true_divide(normal_het_table['ALT_COUNT'],
+                                                normal_het_table['ALT_COUNT']+normal_het_table['REF_COUNT'])
         self.het_table = pd.merge(normal_het_table, tumor_het_table, on='genomic_coord_x', suffixes=('_N', '_T'))
 
     def read_seg_file(self):
@@ -82,6 +86,22 @@ class deTiN_input:
                                    'genomic_coord_end'])] = r.tau + 0.001
         self.call_stats_table['tau'] = tau
         self.call_stats_table['f_acs'] = f_acs
+
+    def annotate_het_table(self):
+        seg_id = np.zeros([len(self.het_table), 1])
+        for seg_index, seg in self.seg_table.iterrows():
+            het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
+                                        self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
+            seg_id[het_index] = seg_index
+        self.het_table['seg_id'] = seg_id
+
+        d = np.ones([len(self.het_table), 1])
+        d[self.het_table['AF_T'] <= 0.5] = -1
+        self.het_table['d'] = d
+
+        d = np.ones([len(self.het_table), 1])
+        d[self.het_table['AF_T'] <= 0.5] = -1
+        self.het_table['d'] = d
 
     def read_and_preprocess_data(self):
         self.read_call_stats_file()

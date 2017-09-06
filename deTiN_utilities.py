@@ -61,11 +61,20 @@ def remove_sites_near_centromere_and_telomeres(het_table):
     het_table.reset_index(inplace=True,drop=True)
     return het_table
 
+def filter_hets_based_on_coverage(het_table):
+
+    het_table=het_table[np.logical_and(het_table['READ_DEPTH_N']>10,het_table['READ_DEPTH_T']>10)]
+    het_table.reset_index(inplace=True,drop=True)
+    return het_table
+
+def filter_segments_based_on_size_f_and_tau(seg_table):
+
+    seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < 0.40,
+                                                seg_table['n_probes'] > 200,seg_table['tau'] > 0]))]
+    seg_table.reset_index(inplace=True,drop=True)
+    return seg_table
+
 def load_exac(exac_vcf):
-    return
-
-
-def identify_aSCNAs(deTiN_input):
     return
 
 
