@@ -1,8 +1,16 @@
 import numpy as np
 from scipy.stats import beta
+
 np.seterr(all='ignore')
+
+
 class model:
-    """stores random variables, likelihoods related to SSNV based estimate"""
+    """Model of tumor in normal (TiN) based on only candidate SSNVs. This estimate is most
+    reliable when there are greater then 6 mutations and TiN is less then ~30%. Previously
+     this estimate has been used on its own to assess TiN in targeted panel data where
+     copy number data is usually limited but SSNVs are well measured.
+     TiN estimate : model.TiN
+     Somatic classification of SSNVs : model.E_z (E_z > 0.5 -> somatic)"""
 
     def __init__(self, candidate_sites, p_somatic):
         # variables follow notation:
@@ -23,7 +31,7 @@ class model:
         self.t_alt_count = np.array(candidate_sites['t_alt_count'])
         self.t_ref_count = np.array(candidate_sites['t_ref_count'])
         self.t_depth = self.t_alt_count + self.t_ref_count
-        self.tumor_f = np.true_divide(self.t_alt_count,self.t_depth)
+        self.tumor_f = np.true_divide(self.t_alt_count, self.t_depth)
         self.number_of_sites = len(self.n_alt_count)
 
         # hyperparameter
@@ -55,8 +63,8 @@ class model:
         self.p_TiN_given_het = np.zeros([self.number_of_sites, 101])
         self.p_artifact = np.zeros([self.number_of_sites, 1])
 
-        #likelihood
-        self.TiN_likelihood = np.zeros([101,1])
+        # likelihood
+        self.TiN_likelihood = np.zeros([101, 1])
 
     def generate_conditional_ps(self):
         # p(TiN|Somatic) and p(TiN|Germline)
@@ -72,9 +80,9 @@ class model:
             n_ac_given_tin = np.multiply(t_af[:, np.newaxis], self.CN_ratio)
 
             # ac given heterozygous
-            f_t_af = 0.5-np.abs((.5-f))
+            f_t_af = 0.5 - np.abs((.5 - f))
             psi_t_af = 0.5 - f_t_af
-            psi_t_af = np.multiply(psi_t_af,t_het_direction[:,i])
+            psi_t_af = np.multiply(psi_t_af, t_het_direction[:, i])
             exp_f = 0.5 + np.multiply(psi_t_af[:, np.newaxis], self.CN_ratio)
             n_het_ac_given_tin = np.multiply(exp_f, self.n_depth[:, np.newaxis])
 
@@ -89,8 +97,8 @@ class model:
                     t_af_w[:, i])
 
         self.p_artifact = self.rv_tumor_af.pdf(self.normal_f) * 0.01
-        self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:,np.newaxis], self.p_TiN_given_het) + np.multiply(
-        self.p_artifact[:,np.newaxis], 1 - self.p_TiN_given_het)
+        self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:, np.newaxis], self.p_TiN_given_het) + np.multiply(
+            self.p_artifact[:, np.newaxis], 1 - self.p_TiN_given_het)
 
     def expectation_of_z_given_TiN(self):
         # E step
@@ -100,8 +108,8 @@ class model:
 
     def maximize_TiN_likelihood(self):
         # M step
-        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[:,np.newaxis],np.log(self.p_TiN_given_S)),axis=0) + \
-                              np.nansum(np.multiply(1-self.E_z[:,np.newaxis],np.log(self.p_TiN_given_G)))
+        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[:, np.newaxis], np.log(self.p_TiN_given_S)), axis=0) + \
+                              np.nansum(np.multiply(1 - self.E_z[:, np.newaxis], np.log(self.p_TiN_given_G)))
         self.TiN = np.argmax(self.TiN_likelihood)
 
     def perform_inference(self):
@@ -110,11 +118,11 @@ class model:
         TiN_last = []
         iteration = 0
         print 'initialized TiN to 0'
-        while self.TiN !=TiN_last :
-            iteration+=1
+        while self.TiN != TiN_last:
+            iteration += 1
             TiN_last = self.TiN
             self.expectation_of_z_given_TiN()
             self.maximize_TiN_likelihood()
-            print 'TiN inference after '+str(iteration)+' iterations = '+str(self.TiN_range[self.TiN])
-        print 'SSNV based TiN estimate converged: TiN = ' +str(self.TiN_range[self.TiN])
+            print 'TiN inference after ' + str(iteration) + ' iterations = ' + str(self.TiN_range[self.TiN])
+        print 'SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN])
         self.TiN = self.TiN_range[self.TiN]

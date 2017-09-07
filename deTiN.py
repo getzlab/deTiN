@@ -88,17 +88,18 @@ class deTiN_input:
         self.call_stats_table['f_acs'] = f_acs
 
     def annotate_het_table(self):
-        seg_id = np.zeros([len(self.het_table), 1])
+        seg_id = np.zeros([len(self.het_table), 1]) - 1
+        tau = np.zeros([len(self.het_table),1])
+        f = np.zeros([len(self.het_table),1])
         for seg_index, seg in self.seg_table.iterrows():
             het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
                                         self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
             seg_id[het_index] = seg_index
+            tau[het_index] = seg['tau']
+            f[het_index] = seg['f']
         self.het_table['seg_id'] = seg_id
-
-        d = np.ones([len(self.het_table), 1])
-        d[self.het_table['AF_T'] <= 0.5] = -1
-        self.het_table['d'] = d
-
+        self.het_table['tau'] = tau
+        self.het_table['f'] = f
         d = np.ones([len(self.het_table), 1])
         d[self.het_table['AF_T'] <= 0.5] = -1
         self.het_table['d'] = d
@@ -107,6 +108,10 @@ class deTiN_input:
         self.read_call_stats_file()
         self.read_seg_file()
         self.annotate_call_stats_with_allelic_cn_data()
+        self.read_het_file()
+        self.seg_table = du.filter_segments_based_on_size_f_and_tau(self.seg_table)
+        self.annotate_het_table()
+        self.het_table = du.remove_sites_near_centromere_and_telomeres(self.het_table)
 
 
 class deTiN_output:
@@ -162,8 +167,10 @@ def main():
     ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior)
     ssnv_based_model.perform_inference()
 
+    di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table,di.het_table)
+    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table,di.het_table)
     # generate aSCNA based model
-    ascna_based_model = dascna.model(di.seg_table, di.het_table)
+    ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)

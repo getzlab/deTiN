@@ -1,6 +1,10 @@
 import numpy as np
 import sys
-import gzip
+from scipy.stats import beta
+from scipy.stats import fisher_exact
+from itertools import compress
+import random
+import pandas as pd
 
 
 def is_number(s):
@@ -77,6 +81,81 @@ def filter_segments_based_on_size_f_and_tau(seg_table):
 def load_exac(exac_vcf):
     return
 
+def identify_aSCNAs(seg_table,het_table):
+
+    mu_af_n = np.mean(het_table['AF_N'])
+    f_detin = np.zeros([len(seg_table),1])
+    f_variance = np.zeros([len(seg_table), 1])
+    n_snps_above_mu = np.zeros([len(seg_table),1])
+    n_snps_below_mu = np.zeros([len(seg_table),1])
+    fishers_p_convergent_seg = np.ones([len(seg_table),1])
+
+    for seg_id,seg in seg_table.iterrows():
+        seg_hets = het_table[het_table['seg_id'] == seg_id]
+        f_detin[seg_id] = mu_af_n - np.mean(np.abs(seg_hets['AF_T']-mu_af_n))
+        f_variance[seg_id] = np.var(np.abs(seg_hets['AF_T']-mu_af_n))
+        n_snps_above_mu[seg_id] = np.mean([np.sum(seg_hets['AF_T'] > mu_af_n),
+                                                        np.sum(seg_hets['AF_N'])> mu_af_n])
+        n_snps_below_mu[seg_id] = np.mean([np.sum(seg_hets['AF_T'] <= mu_af_n),
+                                                        np.sum(seg_hets['AF_N'])<= mu_af_n])
+        fe_tuple = fisher_exact([[np.sum(np.logical_and(seg_hets['AF_T']>mu_af_n,
+                                                                                seg_hets['AF_N']>mu_af_n)),
+                                                          np.sum(np.logical_and(seg_hets['AF_T']>mu_af_n,
+                                                                                seg_hets['AF_N']<=mu_af_n))],
+                                                         [np.sum(np.logical_and(seg_hets['AF_T']<=mu_af_n,
+                                                                                seg_hets['AF_N']>mu_af_n)),
+                                                          np.sum(np.logical_and(seg_hets['AF_T']<=mu_af_n,
+                                                                                seg_hets['AF_N']<=mu_af_n))]],'less')
+        fishers_p_convergent_seg[seg_id] = fe_tuple[1]
+    seg_table['f_detin'] = f_detin
+    seg_table['f_variance'] = f_variance
+    seg_table['n_snps_above_mu'] = n_snps_above_mu
+    seg_table['n_snps_below_mu'] = n_snps_below_mu
+    seg_table['fishers_p_convergent_seg'] = fishers_p_convergent_seg
+    if any((seg_table['fishers_p_convergent_seg']*len(seg_table))<0.05):
+        segs = (seg_table['fishers_p_convergent_seg'] * len(seg_table)) < 0.05
+        ix = list(compress(xrange(len(segs)), segs))
+        print 'identified convergent aSCNA in normal on chromosomes:' + str(np.unique(seg_table['Chromosome'][ix]+1))
+    aSCNAs = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['fishers_p_convergent_seg']*len(seg_table)) >0.05,
+                                                                      seg_table['n_snps_above_mu'] > 10,
+                                                                      seg_table['n_snps_below_mu'] > 10,
+                                                                      seg_table['f_detin']<= 0.4,
+                                                                      seg_table['f_variance']< 0.025]))]
+    return aSCNAs
+
+def ensure_balanced_hets(seg_table,het_table):
+    seg_table['aSCNA'] = np.zeros([len(seg_table), 1])
+    aSCNA_hets = []
+    for seg_id, seg in seg_table.iterrows():
+        seg_hets = het_table[het_table['seg_id'] == seg_id]
+        if np.sum(seg_hets['d'] == -1) > 10 and np.sum(seg_hets['d'] == 1) > 10:
+            alts = np.concatenate([np.array(seg_hets['ALT_COUNT_T'][np.array(seg_hets['d'] == -1)]),
+                                   np.array(seg_hets['REF_COUNT_T'][np.array(seg_hets['d'] == 1)])])
+            refs = np.concatenate([np.array(seg_hets['ALT_COUNT_T'][np.array(seg_hets['d'] == 1)]),
+                                   np.array(seg_hets['REF_COUNT_T'][np.array(seg_hets['d'] == -1)])])
+
+            f = np.mean(np.true_divide(alts, alts + refs))
+            seg_hets = seg_hets[
+                np.logical_and(beta.sf(f, alts + 1, refs + 1) < 0.995, beta.sf(f, alts + 1, refs + 1) > 0.005)]
+            if sum(seg_hets['AF_N'] > 0.5) < sum(seg_hets['AF_N'] <= 0.5) :
+                sites = seg_hets['AF_N'] <= 0.5
+                index = list(compress(xrange(len(sites)), sites))
+                ixs = random.sample(index, (sum(seg_hets['AF_N'] <= 0.5) - sum(seg_hets['AF_N'] > 0.5)))
+                seg_hets = seg_hets.drop(seg_hets.index[[ixs]])
+                seg_hets.reset_index(inplace=True,drop=True)
+
+            if sum(seg_hets['AF_N'] > 0.5) > sum(seg_hets['AF_N'] <= 0.5):
+                sites = seg_hets['AF_N'] > 0.5
+                index = list(compress(xrange(len(sites)), sites))
+                ixs = random.sample(index, (sum(seg_hets['AF_N'] > 0.5) - sum(seg_hets['AF_N'] <= 0.5)))
+                seg_hets = seg_hets.drop(seg_hets.index[[ixs]])
+                seg_hets.reset_index(inplace=True, drop=True)
+            if len(aSCNA_hets)==0:
+                aSCNA_hets = seg_hets
+            else :
+                aSCNA_hets=pd.concat([aSCNA_hets,seg_hets])
+                aSCNA_hets.reset_index(inplace=True,drop=True)
+    return aSCNA_hets
 
 def plotting(deTiN_output):
     return
