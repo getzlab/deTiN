@@ -141,8 +141,8 @@ def main():
                         help='Path to heterozygous site allele count data in normal.'
                              'Required columns: CONTIG,POS,REF_COUNT and ALT_COUNT', required=True)
     parser.add_argument('--exac_data_path',
-                        help='Path to exac vcf file or pickle.', required=True)
-    parser.add_argument('--output_name', required=True,
+                        help='Path to exac vcf file or pickle.', required=False)
+    parser.add_argument('--output_name', required=False,
                         help='sample name')
     parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
                         , required=False, default=0.08)
@@ -168,9 +168,10 @@ def main():
     ssnv_based_model.perform_inference()
 
     di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table,di.het_table)
-    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table,di.het_table)
+    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table,di.aSCNA_hets)
     # generate aSCNA based model
     ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
+    ascna_based_model.perform_inference()
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)

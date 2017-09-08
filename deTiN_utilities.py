@@ -6,7 +6,7 @@ from itertools import compress
 import random
 import pandas as pd
 
-
+random.seed(1)
 def is_number(s):
     try:
         float(s)
