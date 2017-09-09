@@ -39,6 +39,8 @@ class model:
 
         # parameter
         self.TiN = 0
+        self.CI_tin_high = []
+        self.CI_tin_low = []
         self.E_z = np.zeros([self.number_of_sites, 1])
 
         # expected allele fraction of minor allele given allelic copy data
@@ -126,3 +128,11 @@ class model:
             print 'TiN inference after ' + str(iteration) + ' iterations = ' + str(self.TiN_range[self.TiN])
         print 'SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN])
         self.TiN = self.TiN_range[self.TiN]
+
+        posterior = np.exp(self.TiN_likelihood- np.nanmax(self.TiN_likelihood))
+        self.CI_tin_low = self.TiN_range[
+            next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+             if x[1] > 0.025)]
+        self.CI_tin_high = self.TiN_range[
+            next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+            if x[1] > 0.975)]

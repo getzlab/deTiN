@@ -5,6 +5,8 @@ from scipy.stats import fisher_exact
 from itertools import compress
 import random
 import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
 
 random.seed(1)
 def is_number(s):
@@ -16,7 +18,6 @@ def is_number(s):
 
 
 def is_member(a, b):
-    # type: (nparray, nparray) -> nparray
     # based on the matlab is_member function
     # code from stackoverflow user Joe Kington
     bind = {}
@@ -27,6 +28,7 @@ def is_member(a, b):
 
 
 def chr2num(chr):
+    # convert chromosome from strings to ints
     chr[chr == 'X'] = '23'
     chr[chr == 'Y'] = '24'
     chr[np.array(chr == 'MT') | np.array(chr == 'M')] = '25'
@@ -82,7 +84,7 @@ def load_exac(exac_vcf):
     return
 
 def identify_aSCNAs(seg_table,het_table):
-
+    # identify aSCNAs based on minor allele fraction of segments
     mu_af_n = np.mean(het_table['AF_N'])
     f_detin = np.zeros([len(seg_table),1])
     f_variance = np.zeros([len(seg_table), 1])
@@ -157,11 +159,77 @@ def ensure_balanced_hets(seg_table,het_table):
                 aSCNA_hets.reset_index(inplace=True,drop=True)
     return aSCNA_hets
 
-def plotting(deTiN_output):
-    return
+
+def plot_kmeans_info(ascna_based_model):
+    # method for plotting clustering results of aSCNA TiN estimates
+    X = np.array(ascna_based_model.segs['TiN_MAP'])
+    Y = np.array(ascna_based_model.segs['Chromosome'])
+    kIdx = np.max(ascna_based_model.cluster_assignment)
+    K = range(1, 4)
+
+    # variance explained by incorporating additional clusters
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(K, ascna_based_model.mean_sum_squared_distance, 'b*-')
+    ax.plot(K[kIdx], ascna_based_model.mean_sum_squared_distance[kIdx], marker='o', markersize=12,
+            markeredgewidth=2, markeredgecolor='r', markerfacecolor='None')
+    plt.grid(True)
+    plt.xlabel('Number of clusters')
+    plt.ylabel('Average within-cluster sum of squares')
+    plt.title('KMeans residual')
+
+    # scatter plot of TiN estimates per segment by chromosome location and cluster
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    clr = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    for i in range(K[kIdx]):
+        ind = (ascna_based_model.cluster_assignment == i)
+        ax.scatter(X[ind], Y[ind], s=30, c=clr[i], label='Cluster %d' % i)
+    plt.xlabel('MAP tumor in normal estimate (%)')
+    plt.ylabel('Chromosome')
+    plt.title('Cluster by chromosome and TiN')
+
+def plot_TiN_models(do):
+    fig, ax = plt.subplots(1, 1)
+    ascna = ax.plot(do.ascna_based_model.TiN_range, np.exp(do.ascna_based_model.TiN_likelihood- np.nanmax(do.ascna_based_model.TiN_likelihood))
+            ,'r--', lw=1)
+    ssnv = ax.plot(do.ascna_based_model.TiN_range,np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood))
+            ,'b--', lw=1)
+
+    joint = ax.plot(do.ascna_based_model.TiN_range, do.joint_posterior
+        ,'k-', lw=2)
+    plt.xlabel('Tumor in normal estimate')
+    plt.ylabel('p(TiN=x)')
+    plt.title('TiN estimate posterior')
+    plt.legend(handles=[ascna[0],ssnv[0],joint[0]],labels=['aSCNA', 'SSNV','Joint Est.'])
+
+
+def plot_SSNVs(do):
+
+    fig, ax = plt.subplots(1, 1)
+    TiN_fit = ax.plot(np.linspace(0, 1, 101), np.multiply(do.TiN, np.linspace(0, 1, 101)), '--', lw=1, alpha=1,
+                      color='#1D1D1D')
+    background = ax.plot(do.ssnv_based_model.tumor_f, do.ssnv_based_model.normal_f
+                         , '.', lw=0.1, alpha=0.75, color=[0.75, 0.75, 0.75])
+    nod_kept = np.logical_and(do.SSNVs['judgement'] == 'KEEP', do.SSNVs.isnull()['failure_reasons'])
+    cis = do.ssnv_based_model.rv_normal_af.interval(0.682)
+
+    kept_def = ax.plot(do.ssnv_based_model.tumor_f[nod_kept], do.ssnv_based_model.normal_f[nod_kept],
+                       'b.', lw=0.1)
+    d_kept = np.logical_and(do.SSNVs['judgement'] == 'KEEP', ~do.SSNVs.isnull()['failure_reasons'])
+    detin_kept = ax.errorbar(do.ssnv_based_model.tumor_f[d_kept], do.ssnv_based_model.normal_f[d_kept],
+                             yerr=[do.ssnv_based_model.normal_f[d_kept] - cis[0][d_kept],
+                                   cis[1][d_kept] - do.ssnv_based_model.normal_f[d_kept]], fmt='r.', capsize=2)
+
+    plt.xlabel('Tumor AF')
+    plt.ylabel('Normal AF')
+    plt.title('SSNVs considered and recovered')
+    plt.legend(handles=[background[0], kept_def[0], detin_kept[0], TiN_fit[0]],
+               labels=['Candidate Sites', 'Called w/o deTiN ', 'deTiN recovered', 'TiN_fit'])
 
 
 def select_candidate_mutations(call_stats_table):
+    # filter sites in call stats table to those only rejected for presence in the normal
     failure_reasons = np.array(call_stats_table['failure_reasons'])
     candidate_sites = call_stats_table[np.logical_or.reduce(np.array([np.array(call_stats_table['judgement']) == 'KEEP',
                                                                       failure_reasons == 'normal_lod,alt_allele_in_normal',

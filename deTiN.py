@@ -114,17 +114,65 @@ class input:
         self.het_table = du.remove_sites_near_centromere_and_telomeres(self.het_table)
 
 
-class deTiN_output:
-    """class which holds output from deTiN's models"""
+class output:
+    """ combined from deTiN's models
+    reclassified SSNVs based on TiN estimate are labeled KEEP in judgement column
+    self.SSNVs['judgement'] ==  KEEP
 
+    confidence intervals (CI_tin_high/low) represent 95% interval
+    """
+
+    def __init__(self,input,ssnv_based_model,ascna_based_model):
+
+        # previous results
+        self.ssnv_based_model = ssnv_based_model
+        self.ascna_based_model = ascna_based_model
+
+        # useful outputs
+        self.SSNVs = input.candidates
+        self.joint_log_likelihood = np.zeros([101, 1])
+        self.joint_posterior = np.zeros([101, 1])
+        self.CI_tin_high = []
+        self.CI_tin_low = []
+        self.TiN = []
+
+        # variables
+        self.TiN_range = np.linspace(0, 1, num=101)
+
+    def calculate_joint_estimate(self):
+
+        self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
+
+        self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
+                                      - np.nanmax(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood))
+        self.joint_posterior = np.true_divide(self.joint_posterior,np.nansum(self.joint_posterior))
+        self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.nancumsum(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior)))) if
+             x[1] > 0.025)]
+        self.CI_tin_high = self.TiN_range[
+            next(x[0] for x in enumerate(np.nancumsum(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior)))) if
+             x[1] > 0.975)]
+
+        self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+
+    def reclassify_mutations(self):
+        # calculate E_z given joint TiN point estimate
+        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, np.argmax(self.joint_posterior)]
+        denominator = numerator + np.array([1 - self.ssnv_based_model.p_somatic] * self.ssnv_based_model.p_TiN_given_G[:, np.argmax(self.joint_posterior)])
+        self.SSNVs.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
+
+        # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
+        af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f,self.ssnv_based_model.CN_ratio[:,np.nanargmax(self.joint_posterior)])
+        self.SSNVs.loc[:,'p_outlier'] = self.ssnv_based_model.rv_normal_af.sf(af_n_given_TiN)
+
+        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']<=0.975)] = 'KEEP'
 
 __version__ = '1.0'
 
 
 def main():
-    """ Main execution engine of deTiN. Method operates in two stages (1) estimating tumor in normal via candidate SSNVs and SCNAS.
+    """ deTiN pipeline. Method operates in two stages (1) estimating tumor in normal via candidate SSNVs and SCNAS.
         (2) Performing variant re-classification using bayes rule.
-        :rtype: deTIN_output"""
+    """
 
     parser = argparse.ArgumentParser(description='Estimate tumor in normal (TiN) using putative somatic'
                                                  ' events see Taylor-Weiner & Stewart et al. 2017')
@@ -167,14 +215,23 @@ def main():
     ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior)
     ssnv_based_model.perform_inference()
 
+    # identify aSCNAs and filter hets
     di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table,di.het_table)
     di.aSCNA_segs = du.identify_aSCNAs(di.seg_table,di.aSCNA_hets)
+
     # generate aSCNA based model
     ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
     ascna_based_model.perform_inference()
+
+    # combine models and reclassify mutations
+    do = output(input,ssnv_based_model,ascna_based_model)
+    do.calculate_joint_estimate()
+    do.reclassify_mutations()
+
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)
+
 
 
 if __name__ == "__main__":
