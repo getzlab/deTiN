@@ -21,6 +21,8 @@ class input:
         self.exac_db_file = args.exac_data_path
         self.mutation_prior = args.mutation_prior
         self.TiN_prior = args.TiN_prior
+        self.output_path = args.output_dir
+        self.output_name = args.output_name
 
         # related to inputs from class functions
         self.call_stats_table = []
@@ -125,6 +127,7 @@ class output:
     def __init__(self,input,ssnv_based_model,ascna_based_model):
 
         # previous results
+        self.input = input
         self.ssnv_based_model = ssnv_based_model
         self.ascna_based_model = ascna_based_model
 
@@ -227,7 +230,7 @@ def main():
     do = output(input,ssnv_based_model,ascna_based_model)
     do.calculate_joint_estimate()
     do.reclassify_mutations()
-
+    do.SSNVs.to_csv(path_or_buf=input.output_path + '/' + input.output_name+ '_deTiN_SSNVs.txt',sep='\t')
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)

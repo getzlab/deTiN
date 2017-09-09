@@ -160,7 +160,7 @@ def ensure_balanced_hets(seg_table,het_table):
     return aSCNA_hets
 
 
-def plot_kmeans_info(ascna_based_model):
+def plot_kmeans_info(ascna_based_model,do):
     # method for plotting clustering results of aSCNA TiN estimates
     X = np.array(ascna_based_model.segs['TiN_MAP'])
     Y = np.array(ascna_based_model.segs['Chromosome'])
@@ -177,17 +177,22 @@ def plot_kmeans_info(ascna_based_model):
     plt.xlabel('Number of clusters')
     plt.ylabel('Average within-cluster sum of squares')
     plt.title('KMeans residual')
+    fig.set_dpi(150)
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_KmeansEval_plot.png', bbox_inches='tight')
 
     # scatter plot of TiN estimates per segment by chromosome location and cluster
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    clr = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    clr = ['b', 'g', 'r']
     for i in range(K[kIdx]):
         ind = (ascna_based_model.cluster_assignment == i)
         ax.scatter(X[ind], Y[ind], s=30, c=clr[i], label='Cluster %d' % i)
     plt.xlabel('MAP tumor in normal estimate (%)')
     plt.ylabel('Chromosome')
     plt.title('Cluster by chromosome and TiN')
+    fig.set_dpi(150)
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_KmeansScatter_plot.png', bbox_inches='tight')
+
 
 def plot_TiN_models(do):
     fig, ax = plt.subplots(1, 1)
@@ -202,6 +207,8 @@ def plot_TiN_models(do):
     plt.ylabel('p(TiN=x)')
     plt.title('TiN estimate posterior')
     plt.legend(handles=[ascna[0],ssnv[0],joint[0]],labels=['aSCNA', 'SSNV','Joint Est.'])
+    fig.set_dpi(150)
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_TiN_models_plot.png', bbox_inches='tight')
 
 
 def plot_SSNVs(do):
@@ -226,6 +233,8 @@ def plot_SSNVs(do):
     plt.title('SSNVs considered and recovered')
     plt.legend(handles=[background[0], kept_def[0], detin_kept[0], TiN_fit[0]],
                labels=['Candidate Sites', 'Called w/o deTiN ', 'deTiN recovered', 'TiN_fit'])
+    fig.set_dpi(150)
+    fig.savefig(do.input.output_path + '/' + do.input.output_name +'_SSNVs_plot.png',bbox_inches='tight')
 
 
 def select_candidate_mutations(call_stats_table):
