@@ -38,6 +38,10 @@ class model:
         # model outputs
         self.TiN_likelihood = np.zeros([101, 1])
         self.TiN = 0
+        self.mean_sum_squared_distance = np.zeros([3,1])
+        self.cluster_assignment = np.zeros([len(self.segs['Chromosome']),1])
+        self.centroids = np.zeros([3, 1])
+
     def calculate_TiN_likelihood(self):
         t_af_w = np.zeros([len(self.hets), 101])
         rv_tumor_af = beta(self.hets['ALT_COUNT_T'] + 1, self.hets['REF_COUNT_T'] + 1)
@@ -74,6 +78,7 @@ class model:
         centroids = [cent for (cent, var) in km]
         squared_distance_to_centroids = [np.power(np.subtract(self.segs['TiN_MAP'][:, np.newaxis], cent), 2) for cent in
                                          centroids]
+        self.mean_sum_squared_distance = [sum(np.min(d,axis=1))/N for d in squared_distance_to_centroids]
         cluster_assignment = [np.argmin(d, axis=1) for d in squared_distance_to_centroids]
 
         cl_var = np.zeros([3, 1])

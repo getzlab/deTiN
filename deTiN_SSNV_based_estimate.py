@@ -108,8 +108,8 @@ class model:
 
     def maximize_TiN_likelihood(self):
         # M step
-        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[:, np.newaxis], np.log(self.p_TiN_given_S)), axis=0) + \
-                              np.nansum(np.multiply(1 - self.E_z[:, np.newaxis], np.log(self.p_TiN_given_G)))
+        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[:, np.newaxis], np.ma.log(self.p_TiN_given_S)), axis=0) + \
+                              np.nansum(np.multiply(1 - self.E_z[:, np.newaxis], np.ma.log(self.p_TiN_given_G)))
         self.TiN = np.argmax(self.TiN_likelihood)
 
     def perform_inference(self):

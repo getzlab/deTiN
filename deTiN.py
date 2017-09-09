@@ -8,7 +8,7 @@ import deTiN_SSNV_based_estimate as dssnv
 import deTiN_aSCNA_based_estimate as dascna
 
 
-class deTiN_input:
+class input:
     """class which holds the required detin somatic data prior to model"""
 
     def __init__(self, args):
@@ -29,7 +29,7 @@ class deTiN_input:
         self.candidates = []
 
     def read_call_stats_file(self):
-        self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False)
+        self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,comment='#')
         if type(self.call_stats_table['contig'][0]) == str:
             self.call_stats_table['Chromosome'] = du.chr2num(np.array(self.call_stats_table['contig']))
         else:
@@ -40,8 +40,8 @@ class deTiN_input:
         self.n_calls_in = len(self.call_stats_table)
 
     def read_het_file(self):
-        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False)
-        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False)
+        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False,comment='#')
+        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False,comment='#')
 
         if type(tumor_het_table['CONTIG'][0]) == str:
             tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
@@ -65,7 +65,7 @@ class deTiN_input:
         self.het_table = pd.merge(normal_het_table, tumor_het_table, on='genomic_coord_x', suffixes=('_N', '_T'))
 
     def read_seg_file(self):
-        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False)
+        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False,comment='#')
         if not du.is_number(self.seg_table['Chromosome'][0]):
             self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
         else:
@@ -156,7 +156,7 @@ def main():
     parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
 
     args = parser.parse_args()
-    di = deTiN_input(args)
+    di = input(args)
     di.read_and_preprocess_data()
 
     # identify candidate mutations based on MuTect flags.
