@@ -186,10 +186,11 @@ def plot_kmeans_info(ascna_based_model,do):
     clr = ['b', 'g', 'r']
     for i in range(K[kIdx]):
         ind = (ascna_based_model.cluster_assignment == i)
-        ax.scatter(X[ind], Y[ind], s=30, c=clr[i], label='Cluster %d' % i)
+        ax.scatter(X[ind], Y[ind]+1, s=30, c=clr[i], label='Cluster %d' % i)
     plt.xlabel('MAP tumor in normal estimate (%)')
     plt.ylabel('Chromosome')
     plt.title('Cluster by chromosome and TiN')
+    plt.yticks(np.arange(min(Y)+1, max(Y) + 2, 2.0))
     fig.set_dpi(150)
     fig.savefig(do.input.output_path + '/' + do.input.output_name + '_KmeansScatter_plot.png', bbox_inches='tight')
 

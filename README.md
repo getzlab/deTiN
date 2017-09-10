@@ -12,7 +12,7 @@ Genomic characterization is vital to the understanding and treatment of cancer. 
 
 ## Installation
 
-Scripts are standalone but require Numpy, Pandas and Python 2.7. 
+Scripts are standalone but require Numpy, Pandas, Scipy and Python 2.7. 
 
 git clone https://github.com/amarotaylor/deTiN.git
 
