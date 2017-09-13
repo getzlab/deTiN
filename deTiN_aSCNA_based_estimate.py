@@ -118,21 +118,21 @@ class model:
                 self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0)
                 posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
                 self.CI_tin_low = self.TiN_range[
-                    next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+                    next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                          if x[1] > 0.025)]
                 self.CI_tin_high = self.TiN_range[
-                    next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+                    next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                          if x[1] > 0.975)]
                 print 'aSCNA based TiN estimate from modal TiN cluster :  ' +\
                       str(self.TiN)
         else:
-            self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix,axis=0))]
+            self.TiN = self.TiN_range[np.argmax(np.ma.masked_array(np.sum(self.TiN_likelihood_matrix,axis=0)))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix,axis=0)
             posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
             self.CI_tin_low = self.TiN_range[
-                next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+                next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                      if x[1] > 0.025)]
             self.CI_tin_high = self.TiN_range[
-                next(x[0] for x in enumerate(np.nancumsum(np.true_divide(posterior, np.nansum(posterior))))
+                next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                      if x[1] > 0.975)]
             print 'aSCNA based TiN estimate: TiN =  ' + str(self.TiN)
