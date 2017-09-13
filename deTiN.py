@@ -92,8 +92,8 @@ class input:
 
     def annotate_het_table(self):
         seg_id = np.zeros([len(self.het_table), 1]) - 1
-        tau = np.zeros([len(self.het_table),1])
-        f = np.zeros([len(self.het_table),1])
+        tau = np.zeros([len(self.het_table),1]) + 2
+        f = np.zeros([len(self.het_table),1]) + 0.5
         for seg_index, seg in self.seg_table.iterrows():
             het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
                                         self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
@@ -105,7 +105,7 @@ class input:
         self.het_table['tau'] = tau
         self.het_table['f'] = f
         d = np.ones([len(self.het_table), 1])
-        d[self.het_table['AF_T'] <= 0.5] = -1
+        d[np.array(self.het_table['AF_T'],dtype=bool) <= 0.5] = -1
         self.het_table['d'] = d
 
     def read_and_preprocess_data(self):
