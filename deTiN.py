@@ -36,7 +36,7 @@ class input:
         if type(self.call_stats_table['contig'][0]) == str:
             self.call_stats_table['Chromosome'] = du.chr2num(np.array(self.call_stats_table['contig']))
         else:
-            self.call_stats_table['Chromosome'] = np.array(self.call_stats_table['contig'])
+            self.call_stats_table['Chromosome'] = np.array(self.call_stats_table['contig'])-1
         self.call_stats_table = self.call_stats_table[np.isfinite(self.call_stats_table['Chromosome'])]
         self.call_stats_table['genomic_coord_x'] = du.hg19_to_linear_positions(
             np.array(self.call_stats_table['Chromosome']), np.array(self.call_stats_table['position']))
