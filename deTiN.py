@@ -2,6 +2,7 @@ import argparse
 import os
 import numpy as np
 import pandas as pd
+from itertools import compress
 
 import deTiN_utilities as du
 import deTiN_SSNV_based_estimate as dssnv
@@ -96,9 +97,10 @@ class input:
         for seg_index, seg in self.seg_table.iterrows():
             het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
                                         self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
-            seg_id[het_index] = seg_index
-            tau[het_index] = seg['tau']
-            f[het_index] = seg['f']
+            ix = list(compress(xrange(len(het_index)), het_index))
+            seg_id[ix] = seg_index
+            tau[ix] = seg['tau']
+            f[ix] = seg['f']
         self.het_table['seg_id'] = seg_id
         self.het_table['tau'] = tau
         self.het_table['f'] = f
@@ -165,9 +167,9 @@ class output:
 
         # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f,self.ssnv_based_model.CN_ratio[:,np.nanargmax(self.joint_posterior)])
-        self.SSNVs.loc[:,'p_outlier'] = self.ssnv_based_model.rv_normal_af.sf(af_n_given_TiN)
+        self.SSNVs.loc[:,'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN)
+        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']>=0.05)] = 'KEEP'
 
-        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']<=0.975)] = 'KEEP'
 
 __version__ = '1.0'
 
@@ -230,6 +232,7 @@ def main():
     do = output(input,ssnv_based_model,ascna_based_model)
     do.calculate_joint_estimate()
     do.reclassify_mutations()
+    do.SSNVs.drop('Chromosome', axis=1, inplace=True)
     do.SSNVs.to_csv(path_or_buf=input.output_path + '/' + input.output_name+ '_deTiN_SSNVs.txt',sep='\t')
     # make output directory if needed
     if args.output_dir != '.':

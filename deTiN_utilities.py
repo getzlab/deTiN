@@ -170,7 +170,7 @@ def plot_kmeans_info(ascna_based_model,do):
     # variance explained by incorporating additional clusters
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(K, ascna_based_model.mean_sum_squared_distance, 'b*-')
+    ax.plot(K, ascna_based_model.mean_sum_squared_distance, 'b.-')
     ax.plot(K[kIdx], ascna_based_model.mean_sum_squared_distance[kIdx], marker='o', markersize=12,
             markeredgewidth=2, markeredgecolor='r', markerfacecolor='None')
     plt.grid(True)
