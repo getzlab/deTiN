@@ -62,10 +62,10 @@ class model:
         TiN_likelihood = np.zeros([len(self.segs), 101])
         counter = 0
         for seg_id, seg in self.segs.iterrows():
-            self.seg_likelihood[seg_id] = np.sum(self.p_TiN[self.hets['seg_id'] == seg_id], axis=0)
-            seg_var[counter] = np.nanvar(np.argmax(self.p_TiN[self.hets['seg_id'] == seg_id], axis=0))
+            self.seg_likelihood[seg_id] = np.sum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0)
+            seg_var[counter] = np.nanvar(np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
-            TiN_likelihood[counter, :] = np.sum(self.p_TiN[self.hets['seg_id'] == seg_id], axis=0)
+            TiN_likelihood[counter, :] = np.sum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0)
             counter += 1
         self.segs.loc[:, ('TiN_var')] = seg_var
         self.segs.loc[:, ('TiN_MAP')] = TiN_MAP
