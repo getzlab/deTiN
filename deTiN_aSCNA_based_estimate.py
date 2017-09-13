@@ -126,7 +126,7 @@ class model:
                 print 'aSCNA based TiN estimate from modal TiN cluster :  ' +\
                       str(self.TiN)
         else:
-            self.TiN = self.TiN_range[np.argmax(np.ma.masked_array(np.sum(self.TiN_likelihood_matrix,axis=0)))]
+            self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix,axis=0))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix,axis=0)
             posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
             self.CI_tin_low = self.TiN_range[
