@@ -160,7 +160,7 @@ def ensure_balanced_hets(seg_table,het_table):
     return aSCNA_hets
 
 
-def plot_kmeans_info(ascna_based_model,do):
+def plot_kmeans_info(ascna_based_model,output_path,sample_name):
     # method for plotting clustering results of aSCNA TiN estimates
     X = np.array(ascna_based_model.segs['TiN_MAP'])
     Y = np.array(ascna_based_model.segs['Chromosome'])
@@ -178,7 +178,7 @@ def plot_kmeans_info(ascna_based_model,do):
     plt.ylabel('Average within-cluster sum of squares')
     plt.title('KMeans residual')
     fig.set_dpi(150)
-    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_KmeansEval_plot.png', bbox_inches='tight')
+    fig.savefig(output_path + '/' + sample_name + '_KmeansEval_plot.png', bbox_inches='tight')
 
     # scatter plot of TiN estimates per segment by chromosome location and cluster
     fig = plt.figure()
@@ -192,7 +192,7 @@ def plot_kmeans_info(ascna_based_model,do):
     plt.title('Cluster by chromosome and TiN')
     plt.yticks(np.arange(min(Y)+1, max(Y) + 2, 2.0))
     fig.set_dpi(150)
-    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_KmeansScatter_plot.png', bbox_inches='tight')
+    fig.savefig(output_path + '/' + sample_name + '_KmeansScatter_plot.png', bbox_inches='tight')
 
 
 def plot_TiN_models(do):
