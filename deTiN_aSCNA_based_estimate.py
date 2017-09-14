@@ -42,6 +42,7 @@ class model:
         self.mean_sum_squared_distance = np.zeros([3,1])
         self.cluster_assignment = np.zeros([len(self.segs['Chromosome']),1])
         self.centroids = np.zeros([3, 1])
+        self.bic = np.zeros([3,1])
 
     def calculate_TiN_likelihood(self):
         t_af_w = np.zeros([len(self.hets), 101])
@@ -92,7 +93,9 @@ class model:
                 ll_cluster[m] += np.sum(
                     norm.logpdf(standard_tin_data[cluster_assignment[m] == i], centroids[m][i], np.sqrt(cl_var[m, i])))
             p = [2, 6, 12]
-            bic = np.multiply(2, ll_cluster).T + np.multiply(p, np.log(N))
+            self.cl_var = cl_var
+            self.ll_cluster = ll_cluster
+            self.bic = np.multiply(2, ll_cluster).T + np.multiply(p, np.log(N))
             dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
             dist_btwn_c2 = np.abs(np.diff(centroids[1]))
             if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 > 2 * np.nanmax(np.sqrt(cl_var[1,:])):

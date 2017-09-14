@@ -192,6 +192,7 @@ def plot_kmeans_info(ascna_based_model,output_path,sample_name):
     plt.title('Cluster by chromosome and TiN')
     plt.yticks(np.arange(min(Y)+1, max(Y) + 2, 2.0))
     plt.xticks(np.arange(0, 101, 10))
+    ax.set_xlim([-2,np.max(X)+2])
 
 
     fig.set_dpi(150)
