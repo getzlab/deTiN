@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import beta
 from scipy.stats import norm
+from sklearn import preprocessing
 from scipy.cluster.vq import kmeans
 from scipy.stats import mode
 from itertools import combinations
@@ -73,38 +74,38 @@ class model:
 
     def cluster_segments(self):
         K = range(1, 4)
-        km = [kmeans(self.segs['TiN_MAP'], k, iter=1000) for k in K]
         N = len(self.segs['TiN_MAP'])
+        standard_tin_data = preprocessing.scale(self.segs['TiN_MAP'])
+        km = [kmeans(standard_tin_data, k, iter=1000) for k in K]
         centroids = [cent for (cent, var) in km]
-        squared_distance_to_centroids = [np.power(np.subtract(self.segs['TiN_MAP'][:, np.newaxis], cent), 2) for cent in
+        squared_distance_to_centroids = [np.power(np.subtract(standard_tin_data[:, np.newaxis], cent), 2) for cent in
                                          centroids]
         self.mean_sum_squared_distance = [sum(np.min(d,axis=1))/N for d in squared_distance_to_centroids]
         cluster_assignment = [np.argmin(d, axis=1) for d in squared_distance_to_centroids]
 
-        cl_var = np.zeros([3, 1])
+        cl_var = np.zeros([3, 3])
         ll_cluster = np.zeros([3, 1])
         for m in range(3):
-            cl_var[m] = (1.0 / (N - m)) * sum([sum(
-                np.power(np.subtract(self.segs['TiN_MAP'][cluster_assignment[m] == i], centroids[m][i]), 2))
-                for i in range(m + 1)])
-            ll_cluster[m] = sum(
-                [np.sum(norm.logpdf(self.segs['TiN_MAP'][cluster_assignment[m] == i], centroids[m][i], cl_var[m]))
-                 for i in range(m + 1)])
+            for i in range(0, m + 1):
+                cl_var[m, i] = (1.0 / (np.sum(cluster_assignment[m] == i) - 1)) * sum(
+                    np.power(np.subtract(standard_tin_data[cluster_assignment[m] == i], centroids[m][i]), 2))
+                ll_cluster[m] += np.sum(
+                    norm.logpdf(standard_tin_data[cluster_assignment[m] == i], centroids[m][i], np.sqrt(cl_var[m, i])))
             p = [2, 6, 12]
             bic = np.multiply(2, ll_cluster).T + np.multiply(p, np.log(N))
             dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
             dist_btwn_c2 = np.abs(np.diff(centroids[1]))
-            if dist_btwn_c3 < 2 * np.sqrt(cl_var[2]) and dist_btwn_c2 > 2 * np.sqrt(cl_var[1]):
-                solution_idx = np.argmax(bic[0:1])
+            if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 > 2 * np.nanmax(np.sqrt(cl_var[1,:])):
+                solution_idx = np.nanargmax(bic[0:1])
                 self.cluster_assignment = cluster_assignment[solution_idx]
-                self.centroids = centroids[solution_idx]
-            if dist_btwn_c3 < 2 * np.sqrt(cl_var[2]) and dist_btwn_c2 < 2 * np.sqrt(cl_var[1]):
+                self.centroids = np.mean(self.segs['TiN_MAP'])+np.std(self.segs['TiN_MAP'])*centroids[solution_idx]
+            if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 < 2 * np.nanmax(np.sqrt(cl_var[1,:])):
                 self.cluster_assignment = cluster_assignment[0]
-                self.centroids = centroids[0]
+                self.centroids = np.mean(self.segs['TiN_MAP']) + np.std(self.segs['TiN_MAP']) * centroids[0]
             else:
-                solution_idx = np.argmax(bic)
+                solution_idx = np.nanargmax(bic)
                 self.cluster_assignment = cluster_assignment[solution_idx]
-                self.centroids = centroids[solution_idx]
+                self.centroids = np.mean(self.segs['TiN_MAP']) + np.std(self.segs['TiN_MAP']) * centroids[solution_idx]
 
     def perform_inference(self):
         print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(np.unique(self.segs['Chromosome']))
