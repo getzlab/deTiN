@@ -105,7 +105,7 @@ class input:
         self.het_table['tau'] = tau
         self.het_table['f'] = f
         d = np.ones([len(self.het_table), 1])
-        d[np.array(self.het_table['AF_T'],dtype=bool) <= 0.5] = -1
+        d[np.array(self.het_table['AF_T'] <= 0.5,dtype=bool)] = -1
         self.het_table['d'] = d
 
     def read_and_preprocess_data(self):

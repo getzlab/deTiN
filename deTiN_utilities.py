@@ -170,8 +170,8 @@ def plot_kmeans_info(ascna_based_model,output_path,sample_name):
     # variance explained by incorporating additional clusters
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(K, ascna_based_model.mean_sum_squared_distance, 'b.-')
-    ax.plot(K[kIdx], ascna_based_model.mean_sum_squared_distance[kIdx], marker='o', markersize=12,
+    ax.plot(K, ascna_based_model.sum_squared_distance, 'b.-')
+    ax.plot(K[kIdx], ascna_based_model.sum_squared_distance[kIdx], marker='o', markersize=12,
             markeredgewidth=2, markeredgecolor='r', markerfacecolor='None')
     plt.grid(True)
     plt.xlabel('Number of clusters')
@@ -191,7 +191,7 @@ def plot_kmeans_info(ascna_based_model,output_path,sample_name):
     plt.ylabel('Chromosome')
     plt.title('Cluster by chromosome and TiN')
     plt.yticks(np.arange(min(Y)+1, max(Y) + 2, 2.0))
-    plt.xticks(np.arange(0, 101, 10))
+    plt.xticks(np.arange(0, max(X)+1, np.max([np.round(np.true_divide(np.max(X),10)),1]) ))
     ax.set_xlim([-2,np.max(X)+2])
 
 
