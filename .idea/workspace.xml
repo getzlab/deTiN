@@ -6,16 +6,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="106d744b-b7fb-42fa-802a-4cfc004382ec" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_KmeansEval_plot.png" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_KmeansEval_plot.png" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_KmeansScatter_plot.png" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_KmeansScatter_plot.png" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_SSNVs_plot.png" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_SSNVs_plot.png" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_TiN_models_plot.png" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_TiN_models_plot.png" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN.py" afterPath="$PROJECT_DIR$/deTiN.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py" afterPath="$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" afterPath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_utilities.py" afterPath="$PROJECT_DIR$/deTiN_utilities.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_deTiN_SSNVs.txt" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_deTiN_SSNVs.txt" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -41,7 +34,7 @@
       <file leaf-file-name="deTiN_aSCNA_based_estimate.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="386">
+            <state relative-caret-position="620">
               <caret line="104" column="53" lean-forward="true" selection-start-line="104" selection-start-column="53" selection-end-line="104" selection-end-column="53" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -357,7 +350,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="386">
+        <state relative-caret-position="620">
           <caret line="104" column="53" lean-forward="true" selection-start-line="104" selection-start-column="53" selection-end-line="104" selection-end-column="53" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
