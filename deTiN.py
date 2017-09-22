@@ -233,12 +233,24 @@ def main():
     do.calculate_joint_estimate()
     do.reclassify_mutations()
     do.SSNVs.drop('Chromosome', axis=1, inplace=True)
-    do.SSNVs.to_csv(path_or_buf=input.output_path + '/' + input.output_name+ '_deTiN_SSNVs.txt',sep='\t')
+
     # make output directory if needed
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)
+    # write deTiN reclassified SSNVs
+    do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '_deTiN_SSNVs.txt', sep='\t',index=None)
+    # write plots
+    du.plot_kmeans_info(ascna_based_model, do.input.output_path, do.input.output_name)
+    du.plot_TiN_models(do)
+    du.plot_SSNVs(do)
+    # write TiN and CIs
+    file = open(do.input.output_path +'/' + do.input.output_name + 'TiN_estimate.txt', 'w')
+    file.write('%d' % (do.TiN))
+    file.close()
 
-
+    file = open(do.input.output_path + '/' + do.input.output_name + 'TiN_estimate_CI.txt', 'w')
+    file.write('%s - %s' % (str(do.CI_tin_low), str(do.CI_tin_high)))
+    file.close()
 
 if __name__ == "__main__":
     main()
