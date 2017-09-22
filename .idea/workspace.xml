@@ -6,9 +6,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="106d744b-b7fb-42fa-802a-4cfc004382ec" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_TiN_models_plot.png" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_TiN_models_plot.png" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" afterPath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" afterPath="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -22,8 +21,8 @@
       <file leaf-file-name="deTiN.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deTiN.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="145">
-              <caret line="108" column="31" lean-forward="true" selection-start-line="108" selection-start-column="31" selection-end-line="108" selection-end-column="31" />
+            <state relative-caret-position="98">
+              <caret line="221" column="0" lean-forward="true" selection-start-line="216" selection-start-column="2" selection-end-line="221" selection-end-column="0" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -31,11 +30,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="deTiN_aSCNA_based_estimate.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="deTiN_aSCNA_based_estimate.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="620">
-              <caret line="104" column="53" lean-forward="true" selection-start-line="104" selection-start-column="53" selection-end-line="104" selection-end-column="53" />
+            <state relative-caret-position="-763">
+              <caret line="12" column="7" lean-forward="false" selection-start-line="12" selection-start-column="7" selection-end-line="12" selection-end-column="7" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -43,11 +42,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="deTiN_SSNV_based_estimate.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="deTiN_SSNV_based_estimate.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="146">
-              <caret line="66" column="0" lean-forward="true" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
+            <state relative-caret-position="356">
+              <caret line="136" column="109" lean-forward="false" selection-start-line="136" selection-start-column="109" selection-end-line="136" selection-end-column="109" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -58,8 +57,8 @@
       <file leaf-file-name="deTiN_utilities.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="320">
-              <caret line="193" column="79" lean-forward="false" selection-start-line="193" selection-start-column="79" selection-end-line="193" selection-end-column="79" />
+            <state relative-caret-position="454">
+              <caret line="241" column="105" lean-forward="true" selection-start-line="241" selection-start-column="4" selection-end-line="241" selection-end-column="105" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -80,6 +79,8 @@
     <findStrings>
       <find>compre</find>
       <find>compress</find>
+      <find>plot</find>
+      <find>err</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -89,16 +90,16 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/deTiN_aSCNA_model.py" />
-        <option value="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" />
         <option value="$PROJECT_DIR$/deTiN.py" />
         <option value="$PROJECT_DIR$/deTiN_utilities.py" />
         <option value="$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py" />
+        <option value="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="1315" />
-    <option name="y" value="47" />
+    <option name="x" value="1335" />
+    <option name="y" value="53" />
     <option name="width" value="1267" />
     <option name="height" value="852" />
   </component>
@@ -204,7 +205,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1315" y="47" width="1267" height="852" extended-state="0" />
+    <frame x="1335" y="53" width="1267" height="852" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2762431" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -318,10 +319,10 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_model.py" />
-    <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
+    <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="146">
-          <caret line="66" column="0" lean-forward="true" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
+        <state relative-caret-position="454">
+          <caret line="241" column="105" lean-forward="true" selection-start-line="241" selection-start-column="4" selection-end-line="241" selection-end-column="105" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -330,28 +331,28 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="145">
-          <caret line="108" column="31" lean-forward="true" selection-start-line="108" selection-start-column="31" selection-end-line="108" selection-end-column="31" />
+        <state relative-caret-position="98">
+          <caret line="221" column="0" lean-forward="true" selection-start-line="216" selection-start-column="2" selection-end-line="221" selection-end-column="0" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
+    <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="320">
-          <caret line="193" column="79" lean-forward="false" selection-start-line="193" selection-start-column="79" selection-end-line="193" selection-end-column="79" />
+        <state relative-caret-position="-763">
+          <caret line="12" column="7" lean-forward="false" selection-start-line="12" selection-start-column="7" selection-end-line="12" selection-end-column="7" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_based_estimate.py">
+    <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="620">
-          <caret line="104" column="53" lean-forward="true" selection-start-line="104" selection-start-column="53" selection-end-line="104" selection-end-column="53" />
+        <state relative-caret-position="356">
+          <caret line="136" column="109" lean-forward="false" selection-start-line="136" selection-start-column="109" selection-end-line="136" selection-end-column="109" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
