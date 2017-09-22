@@ -151,10 +151,10 @@ class output:
         self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
                                       - np.nanmax(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood))
         self.joint_posterior = np.true_divide(self.joint_posterior,np.nansum(self.joint_posterior))
-        self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.nancumsum(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior)))) if
+        self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
              x[1] > 0.025)]
         self.CI_tin_high = self.TiN_range[
-            next(x[0] for x in enumerate(np.nancumsum(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior)))) if
+            next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
              x[1] > 0.975)]
 
         self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
@@ -229,7 +229,7 @@ def main():
     ascna_based_model.perform_inference()
 
     # combine models and reclassify mutations
-    do = output(input,ssnv_based_model,ascna_based_model)
+    do = output(di,ssnv_based_model,ascna_based_model)
     do.calculate_joint_estimate()
     do.reclassify_mutations()
     do.SSNVs.drop('Chromosome', axis=1, inplace=True)
