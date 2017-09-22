@@ -23,7 +23,7 @@ class model:
 
         # Variables for fit
         self.TiN_range = np.linspace(0, 1, num=101)
-        self.af = np.linspace(0, 1, num=101)
+        self.af = np.linspace(0.005, 1, num=200)
 
         # model parameters
         self.mu_af_n = np.mean(self.hets['AF_N'])
@@ -45,12 +45,12 @@ class model:
         self.bic = np.zeros([3,1])
 
     def calculate_TiN_likelihood(self):
-        t_af_w = np.zeros([len(self.hets), 101])
+        t_af_w = np.zeros([len(self.hets), len(self.af)])
         rv_tumor_af = beta(self.hets['ALT_COUNT_T'] + 1, self.hets['REF_COUNT_T'] + 1)
         rv_normal_af = beta(self.hets['ALT_COUNT_N'] + 1, self.hets['REF_COUNT_N'] + 1)
 
         for i, f in enumerate(self.af):
-            t_af_w[:, i] = rv_tumor_af.cdf(f + .01) - rv_tumor_af.cdf(f)
+            t_af_w[:, i] = rv_tumor_af.cdf(f ) - rv_tumor_af.cdf(f-0.005)
             f_t_af = self.mu_af_n - np.abs((self.mu_af_n - f))
             psi_t_af = self.mu_af_n - f_t_af
             psi_t_af = np.multiply(psi_t_af, self.hets['d'])

@@ -18,7 +18,7 @@ class model:
 
         # Variables for SSNV fit
         self.TiN_range = np.linspace(0, 1, num=101)
-        self.af = np.linspace(0, 1, num=501)
+        self.af = np.linspace(0.005, 1, num=200)
 
         # observed data
         self.contig = candidate_sites['contig']
@@ -75,11 +75,8 @@ class model:
         t_het_direction = np.ones([self.number_of_sites, len(self.af)])
         t_het_direction[:, 0:np.int(np.round(np.true_divide(len(self.af),2)))] = -1
         for i, f in enumerate(self.af):
-            if f == 0 :
-                n_af_w[:,i] = self.rv_normal_af.pdf(f)*0.01
-                t_af_w[:,i] = self.rv_normal_af.pdf(f)*0.01
-            n_af_w[:, i] = self.rv_normal_af.cdf(f ) - self.rv_normal_af.cdf(f - 0.002)
-            t_af_w[:, i] = self.rv_tumor_af.cdf(f ) - self.rv_tumor_af.cdf(f - 0.002)
+            n_af_w[:, i] = self.rv_normal_af.cdf(f ) - self.rv_normal_af.cdf(f - 0.005)
+            t_af_w[:, i] = self.rv_tumor_af.cdf(f ) - self.rv_tumor_af.cdf(f - 0.005)
             # ac given somatic
             t_af = np.multiply(f, self.n_depth)
             n_ac_given_tin = np.multiply(t_af[:, np.newaxis], self.CN_ratio)

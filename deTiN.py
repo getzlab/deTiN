@@ -161,8 +161,8 @@ class output:
 
     def reclassify_mutations(self):
         # calculate E_z given joint TiN point estimate
-        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, np.argmax(self.joint_posterior)]
-        denominator = numerator + np.array([1 - self.ssnv_based_model.p_somatic] * self.ssnv_based_model.p_TiN_given_G[:, np.argmax(self.joint_posterior)])
+        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, np.nanargmax(self.joint_posterior)]
+        denominator = numerator + np.array([1 - self.ssnv_based_model.p_somatic] * self.ssnv_based_model.p_TiN_given_G[:, np.nanargmax(self.joint_posterior)])
         self.SSNVs.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
 
         # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
