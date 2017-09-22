@@ -6,10 +6,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="106d744b-b7fb-42fa-802a-4cfc004382ec" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN.py" afterPath="$PROJECT_DIR$/deTiN.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" afterPath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/example_data/HCC_10_90_deTiN_SSNVs.txt" afterPath="$PROJECT_DIR$/example_data/HCC_10_90_deTiN_SSNVs.txt" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -23,8 +20,8 @@
       <file leaf-file-name="deTiN.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/deTiN.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="337">
-              <caret line="242" column="86" lean-forward="true" selection-start-line="242" selection-start-column="86" selection-end-line="242" selection-end-column="86" />
+            <state relative-caret-position="307">
+              <caret line="240" column="86" lean-forward="false" selection-start-line="240" selection-start-column="86" selection-end-line="240" selection-end-column="86" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -356,8 +353,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="337">
-          <caret line="242" column="86" lean-forward="true" selection-start-line="242" selection-start-column="86" selection-end-line="242" selection-end-column="86" />
+        <state relative-caret-position="307">
+          <caret line="240" column="86" lean-forward="false" selection-start-line="240" selection-start-column="86" selection-end-line="240" selection-end-column="86" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
