@@ -131,8 +131,8 @@ class model:
 
         posterior = np.exp(self.TiN_likelihood- np.nanmax(self.TiN_likelihood))
         self.CI_tin_low = self.TiN_range[
-            next(x[0] for x in enumerate(np.cumsum(np.ma((np.true_divide(posterior, np.nansum(posterior))))))
+            next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array((np.true_divide(posterior, np.nansum(posterior))))))
              if x[1] > 0.025)]
         self.CI_tin_high = self.TiN_range[
-            next(x[0] for x in enumerate(np.cumsum(np.ma((np.true_divide(posterior, np.nansum(posterior))))))
+            next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array((np.true_divide(posterior, np.nansum(posterior))))))
             if x[1] > 0.975)]
