@@ -6,7 +6,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="106d744b-b7fb-42fa-802a-4cfc004382ec" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.ipynb_checkpoints/deTiN_example_0.1_TiN_sim-checkpoint.ipynb" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/deTiN_example_0.1_TiN_sim-checkpoint.ipynb" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" afterPath="$PROJECT_DIR$/deTiN_SSNV_based_estimate.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" afterPath="$PROJECT_DIR$/deTiN_example_0.1_TiN_sim.ipynb" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -20,8 +22,8 @@
       <file leaf-file-name="deTiN.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deTiN.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="98">
-              <caret line="221" column="0" lean-forward="true" selection-start-line="216" selection-start-column="2" selection-end-line="221" selection-end-column="0" />
+            <state relative-caret-position="41">
+              <caret line="221" column="0" lean-forward="true" selection-start-line="221" selection-start-column="0" selection-end-line="221" selection-end-column="0" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -41,11 +43,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="deTiN_SSNV_based_estimate.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="deTiN_SSNV_based_estimate.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="281">
-              <caret line="131" column="30" lean-forward="true" selection-start-line="131" selection-start-column="30" selection-end-line="131" selection-end-column="30" />
+            <state relative-caret-position="1265">
+              <caret line="137" column="40" lean-forward="false" selection-start-line="137" selection-start-column="31" selection-end-line="137" selection-end-column="40" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -53,11 +55,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="deTiN_utilities.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="deTiN_utilities.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="454">
-              <caret line="241" column="105" lean-forward="true" selection-start-line="241" selection-start-column="4" selection-end-line="241" selection-end-column="105" />
+            <state relative-caret-position="137">
+              <caret line="231" column="103" lean-forward="true" selection-start-line="231" selection-start-column="103" selection-end-line="231" selection-end-column="103" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -77,11 +79,12 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>compre</find>
-      <find>compress</find>
       <find>plot</find>
-      <find>err</find>
       <find>nancum</find>
+      <find>err</find>
+      <find>error</find>
       <find>np.ma</find>
+      <find>compress</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -320,10 +323,10 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN_aSCNA_model.py" />
-    <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
+    <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="454">
-          <caret line="241" column="105" lean-forward="true" selection-start-line="241" selection-start-column="4" selection-end-line="241" selection-end-column="105" />
+        <state relative-caret-position="1265">
+          <caret line="137" column="40" lean-forward="false" selection-start-line="137" selection-start-column="31" selection-end-line="137" selection-end-column="40" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -342,18 +345,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/deTiN.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="98">
-          <caret line="221" column="0" lean-forward="true" selection-start-line="216" selection-start-column="2" selection-end-line="221" selection-end-column="0" />
+        <state relative-caret-position="41">
+          <caret line="221" column="0" lean-forward="true" selection-start-line="221" selection-start-column="0" selection-end-line="221" selection-end-column="0" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/deTiN_SSNV_based_estimate.py">
+    <entry file="file://$PROJECT_DIR$/deTiN_utilities.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="281">
-          <caret line="131" column="30" lean-forward="true" selection-start-line="131" selection-start-column="30" selection-end-line="131" selection-end-column="30" />
+        <state relative-caret-position="137">
+          <caret line="231" column="103" lean-forward="true" selection-start-line="231" selection-start-column="103" selection-end-line="231" selection-end-column="103" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

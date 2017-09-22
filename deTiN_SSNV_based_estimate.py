@@ -18,7 +18,7 @@ class model:
 
         # Variables for SSNV fit
         self.TiN_range = np.linspace(0, 1, num=101)
-        self.af = np.linspace(0, 1, num=101)
+        self.af = np.linspace(0, 1, num=501)
 
         # observed data
         self.contig = candidate_sites['contig']
@@ -70,13 +70,16 @@ class model:
 
     def generate_conditional_ps(self):
         # p(TiN|Somatic) and p(TiN|Germline)
-        n_af_w = np.zeros([self.number_of_sites, 101])
-        t_af_w = np.zeros([self.number_of_sites, 101])
-        t_het_direction = np.ones([self.number_of_sites, 101])
-        t_het_direction[:, 0:50] = -1
+        n_af_w = np.zeros([self.number_of_sites, len(self.af)])
+        t_af_w = np.zeros([self.number_of_sites, len(self.af)])
+        t_het_direction = np.ones([self.number_of_sites, len(self.af)])
+        t_het_direction[:, 0:np.int(np.round(np.true_divide(len(self.af),2)))] = -1
         for i, f in enumerate(self.af):
-            n_af_w[:, i] = self.rv_normal_af.cdf(f + .01) - self.rv_normal_af.cdf(f)
-            t_af_w[:, i] = self.rv_tumor_af.cdf(f + .01) - self.rv_tumor_af.cdf(f)
+            if f == 0 :
+                n_af_w[:,i] = self.rv_normal_af.pdf(f)*0.01
+                t_af_w[:,i] = self.rv_normal_af.pdf(f)*0.01
+            n_af_w[:, i] = self.rv_normal_af.cdf(f ) - self.rv_normal_af.cdf(f - 0.002)
+            t_af_w[:, i] = self.rv_tumor_af.cdf(f ) - self.rv_tumor_af.cdf(f - 0.002)
             # ac given somatic
             t_af = np.multiply(f, self.n_depth)
             n_ac_given_tin = np.multiply(t_af[:, np.newaxis], self.CN_ratio)
@@ -101,7 +104,8 @@ class model:
         self.p_artifact = self.rv_tumor_af.pdf(self.normal_f) * 0.01
         self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:, np.newaxis], self.p_TiN_given_het) + np.multiply(
             self.p_artifact[:, np.newaxis], 1 - self.p_TiN_given_het)
-
+        self.p_TiN_given_G = np.true_divide(self.p_TiN_given_G,np.nansum(self.p_TiN_given_G,axis=1)[:,np.newaxis])
+        self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S,np.nansum(self.p_TiN_given_S,axis=1)[:,np.newaxis])
     def expectation_of_z_given_TiN(self):
         # E step
         numerator = self.p_somatic * self.p_TiN_given_S[:, self.TiN]
