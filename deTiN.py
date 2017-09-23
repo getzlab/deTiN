@@ -45,7 +45,8 @@ class input:
     def read_het_file(self):
         tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False,comment='#')
         normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False,comment='#')
-
+        tumor_het_table = du.fix_het_file_header(tumor_het_table)
+        normal_het_table = du.fix_het_file_header(normal_het_table)
         if type(tumor_het_table['CONTIG'][0]) == str:
             tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
         else:
@@ -69,6 +70,7 @@ class input:
 
     def read_seg_file(self):
         self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False,comment='#')
+        self.seg_table = du.fix_seg_file_header(self.seg_table)
         if not du.is_number(self.seg_table['Chromosome'][0]):
             self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
         else:
