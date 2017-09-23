@@ -275,3 +275,54 @@ def hg19_to_linear_positions(chromosome, position, **keyword_parameters):
     C = np.append(1, np.cumsum(L))
     x = np.array([chromosome[int(i)] for i in np.arange(0, len(position))])
     return C[[x.astype(int)]] + position
+
+def fix_het_file_header(het_file):
+
+    required_headers = ['CONTIG','POSITION','ALT_COUNT','REF_COUNT']
+    if np.sum(np.isfinite((is_member(required_headers,het_file.columns)))) == 4:
+        return het_file
+    else:
+        missing_idx = np.where(~np.isfinite((is_member(required_headers,het_file.columns))))
+        for i in missing_idx[0]:
+            if required_headers[i] == 'POSITION':
+                alternate_headers = ['POS','position','pos']
+                if np.sum(np.isfinite(is_member(alternate_headers,het_file.columns))) == 0 or np.sum(np.isfinite(is_member(alternate_headers,het_file.columns))) > 1 :
+                    sys.exit('missing required header POSITION and could not replace with POS,position, or pos!')
+                else:
+                    idx_replace = np.where(np.isfinite(is_member(alternate_headers, het_file.columns)))
+                    het_file.rename(columns={alternate_headers[idx_replace[0][0]]:'POSITION'},inplace=True)
+                    print 'changing header of het file from ' + alternate_headers[idx_replace[0][0]] + ' to POSITION'
+
+            if required_headers[i] == 'CONTIG':
+                alternate_headers = ['CHR','chrom','Chromosome','chr','Chrom']
+                if np.sum(np.isfinite(is_member(alternate_headers,het_file.columns))) == 0 or np.sum(np.isfinite(is_member(alternate_headers,het_file.columns))) > 1 :
+                    sys.exit('missing required header CONTIG and could not replace with any one of CHR, chrom, Chromosome, chr, Chrom!')
+                else:
+                    idx_replace = np.where(np.isfinite(is_member(alternate_headers, het_file.columns)))
+                    het_file.rename(columns={alternate_headers[idx_replace[0][0]]:'CONTIG'},inplace=True)
+                    print 'changing header of het file from ' + alternate_headers[idx_replace[0][0]] + ' to CONTIG'
+
+            if required_headers[i] == 'ALT_COUNT':
+                alternate_headers = ['t_alt_count', 'n_alt_count', 'alt_count']
+                if np.sum(np.isfinite(is_member(alternate_headers, het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(alternate_headers, het_file.columns))) > 1:
+                    sys.exit(
+                        'missing required header ALT_COUNT and could not replace with any one of t_alt_count, n_alt_count, alt_count')
+                else:
+                    idx_replace = np.where(np.isfinite(is_member(alternate_headers, het_file.columns)))
+                    het_file.rename(columns={alternate_headers[idx_replace[0][0]]: 'ALT_COUNT'}, inplace=True)
+                    print 'changing header of het file from ' + alternate_headers[idx_replace[0][0]] + ' to ALT_COUNT'
+
+            if required_headers[i] == 'REF_COUNT':
+                alternate_headers = ['t_ref_count', 'n_ref_count', 'ref_count']
+                if np.sum(np.isfinite(is_member(alternate_headers, het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(alternate_headers, het_file.columns))) > 1:
+                    sys.exit(
+                        'missing required header ALT_COUNT and could not replace with any one of t_ref_count, n_ref_count, ref_count')
+                else:
+                    idx_replace = np.where(np.isfinite(is_member(alternate_headers, het_file.columns)))
+                    het_file.rename(columns={alternate_headers[idx_replace[0][0]]: 'REF_COUNT'}, inplace=True)
+                    print 'changing header of het file from ' + alternate_headers[idx_replace[0][0]] + ' to REF_COUNT'
+
+        return het_file
+
