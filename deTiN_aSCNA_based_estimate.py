@@ -87,7 +87,7 @@ class model:
         cl_var = np.zeros([3, 3])
         for m in range(3):
             for i in range(0, m + 1):
-                cl_var[m, i] = (1.0 / (np.sum(cluster_assignment[m] == i) - 1)) * sum(
+                cl_var[m, i] = (np.true_divide(1.0, (np.sum(cluster_assignment[m] == i)))) * sum(
                     np.power(np.subtract(tin_data[cluster_assignment[m] == i], centroids[m][i]), 2))
             p = [1, 2, 3]
             self.cl_var = cl_var
