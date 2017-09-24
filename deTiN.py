@@ -32,7 +32,12 @@ class input:
         self.candidates = []
 
     def read_call_stats_file(self):
-        self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,comment='#')
+        try:
+            self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,comment='#')
+        except ValueError:
+            print 'Error reading call stats skipping first two rows and trying again'
+            self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,
+                                                comment='#',skiprows=2)
         if type(self.call_stats_table['contig'][0]) == str:
             self.call_stats_table['Chromosome'] = du.chr2num(np.array(self.call_stats_table['contig']))
         else:
