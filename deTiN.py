@@ -147,19 +147,31 @@ class output:
         self.TiN_range = np.linspace(0, 1, num=101)
 
     def calculate_joint_estimate(self):
+        if self.ssnv_based_model.TiN <= 0.3:
+            self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
 
-        self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
-
-        self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
+            self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
                                       - np.nanmax(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood))
-        self.joint_posterior = np.true_divide(self.joint_posterior,np.nansum(self.joint_posterior))
-        self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
-             x[1] > 0.025)]
-        self.CI_tin_high = self.TiN_range[
-            next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
-             x[1] > 0.975)]
+            self.joint_posterior = np.true_divide(self.joint_posterior,np.nansum(self.joint_posterior))
+            self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                x[1] > 0.025)]
+            self.CI_tin_high = self.TiN_range[
+                next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                x[1] > 0.975)]
 
-        self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+            self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+        else:
+            print 'SSNV based TiN estimate exceed 0.3 using only aSCNA based estimate'
+            self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood
+            self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood - np.nanmax(self.ascna_based_model.TiN_likelihood))
+            self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(
+                np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                                                  x[1] > 0.025)]
+            self.CI_tin_high = self.TiN_range[
+                next(x[0] for x in enumerate(np.cumsum(
+                    np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                     x[1] > 0.975)]
+            self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
 
     def reclassify_mutations(self):
         # calculate E_z given joint TiN point estimate
@@ -247,7 +259,7 @@ def main():
     du.plot_SSNVs(do)
     # write TiN and CIs
     file = open(do.input.output_path +'/' + do.input.output_name + '.TiN_estimate.txt', 'w')
-    file.write('%d' % (do.TiN))
+    file.write('%s' % (do.TiN))
     file.close()
 
     file = open(do.input.output_path + '/' + do.input.output_name + '.TiN_estimate_CI.txt', 'w')

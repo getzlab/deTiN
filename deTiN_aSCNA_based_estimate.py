@@ -57,14 +57,14 @@ class model:
             exp_f = self.mu_af_n + np.multiply(psi_t_af[:, np.newaxis], self.CN_ratio)
             exp_f[exp_f < 0] = 0
             for TiN_idx, TiN in enumerate(self.TiN_range):
-                self.p_TiN[:, TiN_idx] += np.multiply(rv_normal_af.logpdf(exp_f[:, TiN_idx]) * 0.01, t_af_w[:, i])
+                self.p_TiN[:, TiN_idx] += np.multiply(rv_normal_af.pdf(exp_f[:, TiN_idx]) * 0.01, t_af_w[:, i])
 
         seg_var = np.zeros([len(self.segs), 1])
         TiN_MAP = np.zeros([len(self.segs), 1])
         TiN_likelihood = np.zeros([len(self.segs), 101])
         counter = 0
         for seg_id, seg in self.segs.iterrows():
-            self.seg_likelihood[seg_id] = np.sum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0)
+            self.seg_likelihood[seg_id] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)]), axis=0)
             seg_var[counter] = np.nanvar(np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
             TiN_likelihood[counter, :] = np.sum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0)
@@ -107,7 +107,7 @@ class model:
                 self.centroids = centroids[solution_idx]
 
     def perform_inference(self):
-        print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(np.unique(self.segs['Chromosome']))
+        print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(np.unique(self.segs['Chromosome'])+1)
         self.calculate_TiN_likelihood()
         self.cluster_segments()
         if np.max(self.cluster_assignment) > 0:
