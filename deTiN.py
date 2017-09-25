@@ -187,7 +187,7 @@ class output:
         # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f,self.ssnv_based_model.CN_ratio[:,np.nanargmax(self.joint_posterior)])
         self.SSNVs.loc[:,'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN)
-        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']>=0.05)] = 'KEEP'
+        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']>=0.01)] = 'KEEP'
 
 
 __version__ = '1.0'

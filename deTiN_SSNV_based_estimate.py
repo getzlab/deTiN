@@ -121,7 +121,7 @@ class model:
         TiN_last = []
         iteration = 0
         print 'initialized TiN to 0'
-        while self.TiN != TiN_last:
+        while self.TiN != TiN_last and iteration <= 100:
             iteration += 1
             TiN_last = self.TiN
             self.expectation_of_z_given_TiN()
