@@ -91,7 +91,7 @@ class model:
                     np.power(np.subtract(tin_data[cluster_assignment[m] == i], centroids[m][i]), 2))
             p = [1, 2, 3]
             self.cl_var = cl_var
-            self.bic = np.multiply(2, self.sum_squared_distance).T + np.multiply(p, np.log(N))
+            self.bic = np.multiply(N, self.sum_squared_distance).T + np.multiply(p, np.log(N))
             dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
             dist_btwn_c2 = np.abs(np.diff(centroids[1]))
             if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 > 2 * np.nanmax(np.sqrt(cl_var[1,:])):

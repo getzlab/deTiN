@@ -34,7 +34,7 @@ class input:
     def read_call_stats_file(self):
         try:
             self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,comment='#')
-        except ValueError:
+        except (ValueError, LookupError):
             print 'Error reading call stats skipping first two rows and trying again'
             self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,
                                                 comment='#',skiprows=2)
