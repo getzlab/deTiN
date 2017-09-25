@@ -202,7 +202,7 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     ax.set_xlim([-2, np.max(X) + 2])
 
     fig.set_dpi(150)
-    fig.savefig(output_path + '/' + sample_name + '_KmeansScatter_plot.png', bbox_inches='tight')
+    fig.savefig(output_path + '/' + sample_name + '_KmeansEval_scatter_plot.png', bbox_inches='tight')
 
 
 def plot_TiN_models(do):
