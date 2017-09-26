@@ -33,7 +33,7 @@ class model:
         self.t_depth = self.t_alt_count + self.t_ref_count
         self.tumor_f = np.true_divide(self.t_alt_count, self.t_depth)
         self.number_of_sites = len(self.n_alt_count)
-
+        self.candidate_sites = np.logical_and(np.logical_and(self.tumor_f > .15, self.t_depth > 15), self.n_depth > 15)
         # hyperparameter
         self.p_somatic = p_somatic
 
@@ -105,14 +105,15 @@ class model:
         self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S,np.nansum(self.p_TiN_given_S,axis=1)[:,np.newaxis])
     def expectation_of_z_given_TiN(self):
         # E step
-        numerator = self.p_somatic * self.p_TiN_given_S[:, self.TiN]
-        denominator = numerator + np.array([1 - self.p_somatic] * self.p_TiN_given_G[:, self.TiN])
+
+        numerator = self.p_somatic * (self.p_TiN_given_S[:,self.TiN])
+        denominator = numerator + np.array([1 - self.p_somatic] * np.nan_to_num(self.p_TiN_given_G[:, self.TiN]))
         self.E_z = np.nan_to_num(np.true_divide(numerator, denominator))
 
     def maximize_TiN_likelihood(self):
         # M step
-        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[:, np.newaxis], np.ma.log(self.p_TiN_given_S)), axis=0) + \
-                              np.nansum(np.multiply(1 - self.E_z[:, np.newaxis], np.ma.log(self.p_TiN_given_G)))
+        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[self.candidate_sites, np.newaxis], np.ma.log(self.p_TiN_given_S[self.candidate_sites,:])), axis=0) + \
+                                np.nansum(np.multiply(1 - self.E_z[self.candidate_sites, np.newaxis], np.ma.log(self.p_TiN_given_G[self.candidate_sites,:])),axis=0)
         self.TiN = np.argmax(self.TiN_likelihood)
 
     def perform_inference(self):

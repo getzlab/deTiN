@@ -252,10 +252,15 @@ def plot_SSNVs(do):
 def select_candidate_mutations(call_stats_table):
     # filter sites in call stats table to those only rejected for presence in the normal
     failure_reasons = np.array(call_stats_table['failure_reasons'])
+
     candidate_sites = call_stats_table[np.logical_or.reduce(np.array([np.array(call_stats_table['judgement']) == 'KEEP',
                                                                       failure_reasons == 'normal_lod,alt_allele_in_normal',
                                                                       failure_reasons == 'normal_lod',
                                                                       failure_reasons == 'alt_allele_in_normal']))]
+    candidate_sites['t_depth'] = candidate_sites['t_alt_count'] + candidate_sites['t_ref_count']
+    candidate_sites['n_depth'] = candidate_sites['n_alt_count'] + candidate_sites['n_ref_count']
+
+
     candidate_sites.reset_index(inplace=True, drop=True)
     return candidate_sites
 
@@ -352,8 +357,8 @@ def fix_seg_file_header(seg_file):
     alternate_headers_start_position = ['Start', 'Start_bp', 'start']
     alternate_headers_end_position = ['End', 'End_bp', 'end']
     alternate_headers_chromosome = ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME']
-    alternate_headers_f = ['f_acs']
-    alternate_headers_tau = ['CN']
+    alternate_headers_f = ['f_acs','MAF_Post_Mode']
+    alternate_headers_tau = ['CN','Segment_Mean_Post_Mode']
 
     required_headers = ['Chromosome', 'Start.bp', 'End.bp', 'f', 'tau']
 
