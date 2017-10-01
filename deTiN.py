@@ -182,6 +182,7 @@ class output:
                      x[1] > 0.975)]
 
             self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+            self.TiN_int = np.nanargmax(self.joint_posterior)
             print 'joint TiN estimate = ' + str(self.TiN)
         else:
             # otherwise TiN estimate is = to aSCNA estimate
