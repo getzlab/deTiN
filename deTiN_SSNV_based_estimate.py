@@ -105,7 +105,6 @@ class model:
         self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S,np.nansum(self.p_TiN_given_S,axis=1)[:,np.newaxis])
     def expectation_of_z_given_TiN(self):
         # E step
-
         numerator = self.p_somatic * (self.p_TiN_given_S[:,self.TiN])
         denominator = numerator + np.array([1 - self.p_somatic] * np.nan_to_num(self.p_TiN_given_G[:, self.TiN]))
         self.E_z = np.nan_to_num(np.true_divide(numerator, denominator))
@@ -117,6 +116,7 @@ class model:
         self.TiN = np.argmax(self.TiN_likelihood)
 
     def perform_inference(self):
+        # perform EM procedure over
         print 'pre-processing SSNV data'
         self.generate_conditional_ps()
         TiN_last = []

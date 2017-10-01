@@ -3,9 +3,11 @@ import sys
 from scipy.stats import beta
 from scipy.stats import fisher_exact
 from itertools import compress
+import gzip
 import random
 import pandas as pd
 import matplotlib
+import pickle
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -77,8 +79,8 @@ def filter_hets_based_on_coverage(het_table):
     return het_table
 
 
-def filter_segments_based_on_size_f_and_tau(seg_table):
-    seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < 0.40,
+def filter_segments_based_on_size_f_and_tau(seg_table,aSCNA_thresh):
+    seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < aSCNA_thresh,
                                                           seg_table['n_probes'] > 200, seg_table['tau'] > 0]))]
     seg_table.reset_index(inplace=True, drop=True)
     return seg_table
@@ -88,7 +90,7 @@ def load_exac(exac_vcf):
     return
 
 
-def identify_aSCNAs(seg_table, het_table):
+def identify_aSCNAs(seg_table, het_table,aSCNA_thresh):
     # identify aSCNAs based on minor allele fraction of segments
     mu_af_n = np.mean(het_table['AF_N'])
     f_detin = np.zeros([len(seg_table), 1])
@@ -127,7 +129,7 @@ def identify_aSCNAs(seg_table, het_table):
         np.logical_and.reduce(np.array([np.array(seg_table['fishers_p_convergent_seg'] * len(seg_table)) > 0.05,
                                         seg_table['n_snps_above_mu'] > 10,
                                         seg_table['n_snps_below_mu'] > 10,
-                                        seg_table['f_detin'] <= 0.4,
+                                        seg_table['f_detin'] <= aSCNA_thresh,
                                         seg_table['f_variance'] < 0.025]))]
     return aSCNAs
 
@@ -260,7 +262,6 @@ def select_candidate_mutations(call_stats_table):
     candidate_sites['t_depth'] = candidate_sites['t_alt_count'] + candidate_sites['t_ref_count']
     candidate_sites['n_depth'] = candidate_sites['n_alt_count'] + candidate_sites['n_ref_count']
 
-
     candidate_sites.reset_index(inplace=True, drop=True)
     return candidate_sites
 
@@ -357,8 +358,8 @@ def fix_seg_file_header(seg_file):
     alternate_headers_start_position = ['Start', 'Start_bp', 'start']
     alternate_headers_end_position = ['End', 'End_bp', 'end']
     alternate_headers_chromosome = ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME']
-    alternate_headers_f = ['f_acs','MAF_Post_Mode']
-    alternate_headers_tau = ['CN','Segment_Mean_Post_Mode']
+    alternate_headers_f = ['f_acs', 'MAF_Post_Mode']
+    alternate_headers_tau = ['CN', 'Segment_Mean_Post_Mode']
 
     required_headers = ['Chromosome', 'Start.bp', 'End.bp', 'f', 'tau']
 
@@ -421,3 +422,52 @@ def fix_seg_file_header(seg_file):
                     print 'changing header of het file from ' + alternate_headers_tau[idx_replace[0][0]] + ' to tau'
 
         return seg_file
+
+
+def build_exac_pickle(exac_file):
+    # create ExAC site dictionary from VCF file
+    exac_site_info = {}
+    print 'Filtering ExAC sites from candidate mutations'
+    with gzip.open(exac_file, "rb") as vcf_file:
+        for line_index, line in enumerate(vcf_file):
+            if line_index % 10000 == 0:
+                print 'processed ' + str(line_index) + ' ExAC sites'
+            spl = line.strip("\n").split("\t")
+
+            # line is a comment
+            if line[0] == '#':
+                continue
+            site = spl[0] + '_' + spl[1]
+            info = spl[7]
+            info_dict = {}
+            info_dict['ref_allele'] = spl[3]
+            info_dict['alt_allele'] = spl[4]
+            for field in info.strip("\n").split(";"):
+                if field.split("=")[0] not in ['AC', 'AF']: continue
+                try:
+                    info_dict[field.split("=")[0]] = field.split("=")[1]
+                except:
+                    pass
+                    # print 'bad field:', field
+            # select only sites where population allele fractions exceeds 0.01
+            if np.sum(np.array(info_dict['AF'].split(','), dtype=float)) >= 0.01:
+                exac_site_info[site] = info_dict
+    with open('exac.pickle', 'wb') as handle:
+        pickle.dump(exac_site_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def remove_exac_sites_from_call_stats(call_stats_table, exac_file):
+    # use ExAC vcf to filter likely germline variants out of candidate sites
+    with open(exac_file, 'rb') as handle:
+        exac_dict = pickle.load(handle)
+        keep = np.ones_like(call_stats_table['position'],dtype=bool)
+    for index, row in call_stats_table.iterrows():
+        key = str(row['contig']) + '_' + str(row['position'])
+        try:
+            exac_dict[key]
+            print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
+            keep[index] = False
+        except KeyError:
+            pass
+    return call_stats_table[keep]
+

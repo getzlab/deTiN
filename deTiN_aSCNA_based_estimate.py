@@ -107,8 +107,11 @@ class model:
                 self.centroids = centroids[solution_idx]
 
     def perform_inference(self):
+        # MAP estimation of TiN using copy number data
         print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(np.unique(self.segs['Chromosome'])+1)
+        # calculate likelihood function for TiN in each segment
         self.calculate_TiN_likelihood()
+        # perform k-means clustering on TiN segment data
         self.cluster_segments()
         if np.max(self.cluster_assignment) > 0:
             print 'detected ' + str(np.max(self.cluster_assignment)+1) +' clusters'

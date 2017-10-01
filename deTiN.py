@@ -24,7 +24,8 @@ class input:
         self.TiN_prior = args.TiN_prior
         self.output_path = args.output_dir
         self.output_name = args.output_name
-
+        self.use_outlier_removal = args.use_outlier_removal
+        self.aSCNA_thresh = args.aSCNA_threshold
         # related to inputs from class functions
         self.call_stats_table = []
         self.seg_table = []
@@ -33,23 +34,26 @@ class input:
 
     def read_call_stats_file(self):
         try:
-            self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,comment='#')
+            self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,
+                                                comment='#')
         except (ValueError, LookupError):
             print 'Error reading call stats skipping first two rows and trying again'
             self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False, low_memory=False,
-                                                comment='#',skiprows=2)
+                                                comment='#', skiprows=2)
         if type(self.call_stats_table['contig'][0]) == str:
             self.call_stats_table['Chromosome'] = du.chr2num(np.array(self.call_stats_table['contig']))
         else:
-            self.call_stats_table['Chromosome'] = np.array(self.call_stats_table['contig'])-1
+            self.call_stats_table['Chromosome'] = np.array(self.call_stats_table['contig']) - 1
         self.call_stats_table = self.call_stats_table[np.isfinite(self.call_stats_table['Chromosome'])]
+        self.call_stats_table = du.remove_exac_sites_from_call_stats(self.call_stats_table, self.exac_db_file)
         self.call_stats_table['genomic_coord_x'] = du.hg19_to_linear_positions(
             np.array(self.call_stats_table['Chromosome']), np.array(self.call_stats_table['position']))
         self.n_calls_in = len(self.call_stats_table)
+        self.call_stats_table.reset_index(inplace=True,drop=True)
 
     def read_het_file(self):
-        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False,comment='#')
-        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False,comment='#')
+        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False, comment='#')
+        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False, comment='#')
         tumor_het_table = du.fix_het_file_header(tumor_het_table)
         normal_het_table = du.fix_het_file_header(normal_het_table)
         if type(tumor_het_table['CONTIG'][0]) == str:
@@ -68,13 +72,13 @@ class input:
         normal_het_table['genomic_coord_x'] = du.hg19_to_linear_positions(np.array(normal_het_table['Chromosome']),
                                                                           np.array(normal_het_table['POSITION']))
         tumor_het_table['AF'] = np.true_divide(tumor_het_table['ALT_COUNT'],
-                                               tumor_het_table['ALT_COUNT']+tumor_het_table['REF_COUNT'])
+                                               tumor_het_table['ALT_COUNT'] + tumor_het_table['REF_COUNT'])
         normal_het_table['AF'] = np.true_divide(normal_het_table['ALT_COUNT'],
-                                                normal_het_table['ALT_COUNT']+normal_het_table['REF_COUNT'])
+                                                normal_het_table['ALT_COUNT'] + normal_het_table['REF_COUNT'])
         self.het_table = pd.merge(normal_het_table, tumor_het_table, on='genomic_coord_x', suffixes=('_N', '_T'))
 
     def read_seg_file(self):
-        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False,comment='#')
+        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False, comment='#')
         self.seg_table = du.fix_seg_file_header(self.seg_table)
         if not du.is_number(self.seg_table['Chromosome'][0]):
             self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
@@ -99,11 +103,11 @@ class input:
 
     def annotate_het_table(self):
         seg_id = np.zeros([len(self.het_table), 1]) - 1
-        tau = np.zeros([len(self.het_table),1]) + 2
-        f = np.zeros([len(self.het_table),1]) + 0.5
+        tau = np.zeros([len(self.het_table), 1]) + 2
+        f = np.zeros([len(self.het_table), 1]) + 0.5
         for seg_index, seg in self.seg_table.iterrows():
             het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
-                                        self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
+                                       self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
             ix = list(compress(xrange(len(het_index)), het_index))
             seg_id[ix] = seg_index
             tau[ix] = seg['tau']
@@ -112,7 +116,7 @@ class input:
         self.het_table['tau'] = tau
         self.het_table['f'] = f
         d = np.ones([len(self.het_table), 1])
-        d[np.array(self.het_table['AF_T'] <= 0.5,dtype=bool)] = -1
+        d[np.array(self.het_table['AF_T'] <= 0.5, dtype=bool)] = -1
         self.het_table['d'] = d
 
     def read_and_preprocess_data(self):
@@ -120,7 +124,7 @@ class input:
         self.read_seg_file()
         self.annotate_call_stats_with_allelic_cn_data()
         self.read_het_file()
-        self.seg_table = du.filter_segments_based_on_size_f_and_tau(self.seg_table)
+        self.seg_table = du.filter_segments_based_on_size_f_and_tau(self.seg_table,self.aSCNA_thresh)
         self.annotate_het_table()
         self.het_table = du.remove_sites_near_centromere_and_telomeres(self.het_table)
 
@@ -133,7 +137,7 @@ class output:
     confidence intervals (CI_tin_high/low) represent 95% interval
     """
 
-    def __init__(self,input,ssnv_based_model,ascna_based_model):
+    def __init__(self, input, ssnv_based_model, ascna_based_model):
 
         # previous results
         self.input = input
@@ -150,25 +154,41 @@ class output:
 
         # variables
         self.TiN_range = np.linspace(0, 1, num=101)
+        self.TiN_int = 0
+        # threshold for accepting variants based on the predicted somatic assignment
+        # if p(S|TiN) exceeds threshold we keep the variant.
+        self.threshold = 0.5
+        # defines whether to remove events based on predicted exceeding predicted allele fractions
+        # if Beta_cdf(predicted_normal_af;n_alt_count+1,n_ref_count+1) <= 0.01 we remove the variant
+        self.use_outlier_threshold = input.use_outlier_removal
 
     def calculate_joint_estimate(self):
+        # do not use SSNV based estimate if it exceeds 0.3 (this estimate can be unreliable at high TiNs due to
+        # germline events)
         if self.ssnv_based_model.TiN <= 0.3:
+            # combine independent likelihoods
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
-
+            # normalize likelihood to calculate posterior
             self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
-                                      - np.nanmax(self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood))
-            self.joint_posterior = np.true_divide(self.joint_posterior,np.nansum(self.joint_posterior))
-            self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
-                x[1] > 0.025)]
+                                          - np.nanmax(
+                self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood))
+            self.joint_posterior = np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))
+            self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(
+                np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                                                  x[1] > 0.025)]
             self.CI_tin_high = self.TiN_range[
-                next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
-                x[1] > 0.975)]
+                next(x[0] for x in enumerate(np.cumsum(
+                    np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                     x[1] > 0.975)]
 
             self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+            print 'joint TiN estimate = ' + str(self.TiN)
         else:
+            # otherwise TiN estimate is = to aSCNA estimate
             print 'SSNV based TiN estimate exceed 0.3 using only aSCNA based estimate'
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood
-            self.joint_posterior = np.exp(self.ascna_based_model.TiN_likelihood - np.nanmax(self.ascna_based_model.TiN_likelihood))
+            self.joint_posterior = np.exp(
+                self.ascna_based_model.TiN_likelihood - np.nanmax(self.ascna_based_model.TiN_likelihood))
             self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(
                 np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
                                                   x[1] > 0.025)]
@@ -177,17 +197,24 @@ class output:
                     np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
                      x[1] > 0.975)]
             self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
+            self.TiN_int = np.nanargmax(self.joint_posterior)
 
     def reclassify_mutations(self):
-        # calculate E_z given joint TiN point estimate
-        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, np.nanargmax(self.joint_posterior)]
-        denominator = numerator + np.array([1 - self.ssnv_based_model.p_somatic] * self.ssnv_based_model.p_TiN_given_G[:, np.nanargmax(self.joint_posterior)])
+        # calculate p(Somatic | given joint TiN estimate)
+        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, self.TiN_int]
+        denominator = numerator + np.array(
+            [1 - self.ssnv_based_model.p_somatic] * np.nan_to_num(self.ssnv_based_model.p_TiN_given_G[:, self.TiN_int]))
         self.SSNVs.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
-
-        # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
-        af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f,self.ssnv_based_model.CN_ratio[:,np.nanargmax(self.joint_posterior)])
-        self.SSNVs.loc[:,'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN)
-        self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN']>0.5,self.SSNVs['p_outlier']>=0.01)] = 'KEEP'
+        # expected normal allele fraction given TiN and tau
+        af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f, self.ssnv_based_model.CN_ratio[:, self.TiN_int])
+        # probability of normal allele fraction less than or equal to predicted fraction
+        self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN)
+        if self.use_outlier_threshold:
+            # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
+            self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN'] > self.threshold,
+                                                   self.SSNVs['p_outlier'] >= 0.01)] = 'KEEP'
+        else:
+            self.SSNVs['judgement'][self.SSNVs['p_somatic_given_TiN'] > self.threshold] = 'KEEP'
 
 
 __version__ = '1.0'
@@ -200,32 +227,35 @@ def main():
 
     parser = argparse.ArgumentParser(description='Estimate tumor in normal (TiN) using putative somatic'
                                                  ' events see Taylor-Weiner & Stewart et al. 2017')
+    # input files
     parser.add_argument('--mutation_data_path',
                         help='Path to mutation data.'
-                             'Supported formats: MuTect call-stats, Strelka VCF', required=True)
+                             'Supported formats: MuTect call-stats', required=True)
     parser.add_argument('--cn_data_path',
                         help='Path to copy number data.'
-                             'Supported format: GATK4CNV .seg file or AllelicCapseg .seg file', required=True)
+                             'Supported format: AllelicCapseg .seg file. Generated by GATK4 AllelicCNV.', required=True)
     parser.add_argument('--tumor_het_data_path',
-                        help='Path to heterozygous site allele count data in tumor.'
+                        help='Path to heterozygous site allele count data in tumor. Generated by GATK4 GetBayesianHetCoverage.'
                              'Required columns: CONTIG,POS,REF_COUNT and ALT_COUNT', required=True)
     parser.add_argument('--normal_het_data_path',
-                        help='Path to heterozygous site allele count data in normal.'
+                        help='Path to heterozygous site allele count data in normal. Generated by GATK4 GetBayesianHetCoverage'
                              'Required columns: CONTIG,POS,REF_COUNT and ALT_COUNT', required=True)
     parser.add_argument('--exac_data_path',
-                        help='Path to exac vcf file or pickle.', required=False)
+                        help='Path to exac af > 0.01 pickle. Can be generated by downloading ExAC VCF and running build_exac_pickle', required=False)
+    # output related arguments
     parser.add_argument('--output_name', required=False,
                         help='sample name')
-    parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
-                        , required=False, default=0.08)
-    parser.add_argument('--mutation_data_source',
-                        help='Variant caller used.'
-                             'Supported values: mutect,strelka,varscan,and somaticsniper', required=False,
-                        default='MuTect')
-
-    parser.add_argument('--TiN_prior', help='expected frequency of TiN contamination in sequencing setting',
-                        required=False, default=0.1)
     parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
+    # model related parameters
+    parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
+                        , required=False, default=0.15)
+    parser.add_argument('--aSCNA_threshold', help='minor allele fraction threshold for calling aSCNAs.'
+                        , required=False, default=0.4)
+    parser.add_argument('--TiN_prior', help='expected frequency of TiN contamination in sequencing setting used for model selection',
+                        required=False, default=0.2)
+    parser.add_argument('--use_outlier_removal',
+                        help='remove sites from recovered SSNVs where allele fractions significantly exceed predicted fraction',
+                        required=False, default=True)
 
     args = parser.parse_args()
     di = input(args)
@@ -240,15 +270,15 @@ def main():
     ssnv_based_model.perform_inference()
 
     # identify aSCNAs and filter hets
-    di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table,di.het_table)
-    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table,di.aSCNA_hets)
+    di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
+    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh)
 
     # generate aSCNA based model
     ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
     ascna_based_model.perform_inference()
 
     # combine models and reclassify mutations
-    do = output(di,ssnv_based_model,ascna_based_model)
+    do = output(di, ssnv_based_model, ascna_based_model)
     do.calculate_joint_estimate()
     do.reclassify_mutations()
     do.SSNVs.drop('Chromosome', axis=1, inplace=True)
@@ -257,19 +287,21 @@ def main():
     if args.output_dir != '.':
         os.makedirs(args.output_dir, exist_ok=True)
     # write deTiN reclassified SSNVs
-    do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_SSNVs.txt', sep='\t',index=None)
+    do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_SSNVs.txt', sep='\t',
+                    index=None)
     # write plots
     du.plot_kmeans_info(ascna_based_model, do.input.output_path, do.input.output_name)
     du.plot_TiN_models(do)
     du.plot_SSNVs(do)
     # write TiN and CIs
-    file = open(do.input.output_path +'/' + do.input.output_name + '.TiN_estimate.txt', 'w')
+    file = open(do.input.output_path + '/' + do.input.output_name + '.TiN_estimate.txt', 'w')
     file.write('%s' % (do.TiN))
     file.close()
 
     file = open(do.input.output_path + '/' + do.input.output_name + '.TiN_estimate_CI.txt', 'w')
     file.write('%s - %s' % (str(do.CI_tin_low), str(do.CI_tin_high)))
     file.close()
+
 
 if __name__ == "__main__":
     main()
