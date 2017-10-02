@@ -4,8 +4,7 @@ DeTiN estimates tumor in normal (TiN) based on tumor and matched normal sequenci
 
 ## Code Example
 
-python deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_removed.txt --cn_data_path example_data/HCC-1143_100_T-sim-final.acs.seg --tumor_het_data example_data/HCC_10_90.tumor.hets.tsv --normal_het_data example_data/HCC_10_90.normal.hets.tsv --exac_data_path example_data/exac.pickle_high_af --output_name 10_percent_TiN_simulation 
-
+python deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_removed.txt --cn_data_path example_data/HCC-1143_100_T-sim-final.acs.seg --tumor_het_data example_data/HCC_10_90.tumor.hets.tsv --normal_het_data example_data/HCC_10_90.normal.hets.tsv --exac_data_path example_data/exac.pickle_high_af --output_name 10_percent_TiN_simulation --indel_data_path example_data/MuTect2.call_stats.txt --indel_data_type MuTect2 --output_dir example_data/
 ## Motivation
 
 Genomic characterization is vital to the understanding and treatment of cancer.  Detection of somatic mutations is a critical component of this process. A key step in sensitive and specific somatic mutation detection is comparison of the tumor sample to a matched germline control. Sensitivity to detect somatic variants is greatly reduced when the matched normal sample is contaminated with tumor cells. To overcome this limitation, we developed deTiN, a method that estimates tumor-in-normal contamination (TiN), and improves detection sensitivity when using a contaminated normal. 
