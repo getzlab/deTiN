@@ -209,19 +209,26 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
 
 def plot_TiN_models(do):
     fig, ax = plt.subplots(1, 1)
-    ascna = ax.plot(do.ascna_based_model.TiN_range,
-                    np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood))
+    TiN_range = np.linspace(0, 1, num=101)
+    if ~np.isnan(do.ascna_based_model.TiN):
+        ascna = ax.plot(TiN_range,
+                    np.true_divide(np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood)),
+                                   np.nansum(np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood))))
                     , 'r--', lw=1)
-    ssnv = ax.plot(do.ascna_based_model.TiN_range,
-                   np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood))
+    ssnv = ax.plot(TiN_range,
+                   np.true_divide(np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood)),
+                                  np.nansum(np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood))))
                    , 'b--', lw=1)
 
-    joint = ax.plot(do.ascna_based_model.TiN_range, do.joint_posterior
+    joint = ax.plot(TiN_range, do.joint_posterior
                     , 'k-', lw=2)
     plt.xlabel('Tumor in normal estimate')
     plt.ylabel('p(TiN=x)')
     plt.title('TiN estimate posterior')
-    plt.legend(handles=[ascna[0], ssnv[0], joint[0]], labels=['aSCNA', 'SSNV', 'Joint Est.'])
+    if ~np.isnan(do.ascna_based_model.TiN):
+        plt.legend(handles=[ascna[0], ssnv[0], joint[0]], labels=['aSCNA', 'SSNV', 'Joint Est.'])
+    else:
+        plt.legend(handles=[ssnv[0], joint[0]], labels=['SSNV', 'Joint Est.'])
     fig.set_dpi(150)
     fig.savefig(do.input.output_path + '/' + do.input.output_name + '_TiN_models_plot.png', bbox_inches='tight')
 
@@ -247,11 +254,12 @@ def plot_SSNVs(do):
     plt.title('SSNVs considered and recovered')
     plt.legend(handles=[background[0], kept_def[0], detin_kept[0], TiN_fit[0]],
                labels=['Candidate Sites', 'Called w/o deTiN ', 'deTiN recovered', 'TiN_fit'])
-    fig.set_dpi(150)
+    fig.set_dpi(300)
     fig.savefig(do.input.output_path + '/' + do.input.output_name + '_SSNVs_plot.png', bbox_inches='tight')
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_SSNVs_plot.eps',format='eps', bbox_inches='tight')
 
 
-def select_candidate_mutations(call_stats_table):
+def select_candidate_mutations(call_stats_table,exac_db_file):
     # filter sites in call stats table to those only rejected for presence in the normal
     failure_reasons = np.array(call_stats_table['failure_reasons'])
 
@@ -261,6 +269,8 @@ def select_candidate_mutations(call_stats_table):
                                                                       failure_reasons == 'alt_allele_in_normal']))]
     candidate_sites['t_depth'] = candidate_sites['t_alt_count'] + candidate_sites['t_ref_count']
     candidate_sites['n_depth'] = candidate_sites['n_alt_count'] + candidate_sites['n_ref_count']
+    candidate_sites.reset_index(inplace=True, drop=True)
+    candidate_sites = remove_exac_sites_from_call_stats(candidate_sites, exac_db_file)
 
     candidate_sites.reset_index(inplace=True, drop=True)
     return candidate_sites
@@ -293,10 +303,10 @@ def fix_het_file_header(het_file):
     # allowing flexibility in het file headers to accommodate changing versions of GATK4 and other CN tools
     # in order to add support for your het file headers please modify the alternate header lists below
 
-    alternate_headers_position = ['POS', 'position', 'pos']
+    alternate_headers_position = ['POS', 'position', 'pos','Start_position']
     alternate_headers_chromosome = ['CHR', 'chrom', 'Chromosome', 'chr', 'Chrom']
-    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count']
-    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count']
+    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count','i_t_alt_count']
+    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count','i_t_ref_count']
 
     required_headers = ['CONTIG', 'POSITION', 'ALT_COUNT', 'REF_COUNT']
 
@@ -465,7 +475,7 @@ def remove_exac_sites_from_call_stats(call_stats_table, exac_file):
         key = str(row['contig']) + '_' + str(row['position'])
         try:
             exac_dict[key]
-            print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
+            #print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
             keep[index] = False
         except KeyError:
             pass

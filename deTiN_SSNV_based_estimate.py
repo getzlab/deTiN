@@ -27,7 +27,7 @@ class model:
         self.n_alt_count = np.array(candidate_sites['n_alt_count'])
         self.n_ref_count = np.array(candidate_sites['n_ref_count'])
         self.n_depth = self.n_alt_count + self.n_ref_count
-        self.normal_f = np.true_divide(self.n_alt_count, self.n_depth)
+        self.normal_f = np.nan_to_num(np.true_divide(self.n_alt_count, self.n_depth))
         self.t_alt_count = np.array(candidate_sites['t_alt_count'])
         self.t_ref_count = np.array(candidate_sites['t_ref_count'])
         self.t_depth = self.t_alt_count + self.t_ref_count
@@ -101,8 +101,9 @@ class model:
         self.p_artifact = self.rv_tumor_af.pdf(self.normal_f) * 0.01
         self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:, np.newaxis], self.p_TiN_given_het) + np.multiply(
             self.p_artifact[:, np.newaxis], 1 - self.p_TiN_given_het)
-        self.p_TiN_given_G = np.true_divide(self.p_TiN_given_G,np.nansum(self.p_TiN_given_G,axis=1)[:,np.newaxis])
-        self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S,np.nansum(self.p_TiN_given_S,axis=1)[:,np.newaxis])
+        # weak uniform prior over TiN
+        #self.p_TiN_given_G = np.true_divide(self.p_TiN_given_G+1e-317,np.nansum(self.p_TiN_given_G+1e-317,axis=1)[:,np.newaxis])
+        #self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S+1e-317,np.nansum(self.p_TiN_given_S+1e-317,axis=1)[:,np.newaxis])
     def expectation_of_z_given_TiN(self):
         # E step
         numerator = self.p_somatic * (self.p_TiN_given_S[:,self.TiN])

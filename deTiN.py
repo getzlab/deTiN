@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import numpy as np
 import pandas as pd
 from itertools import compress
@@ -20,11 +21,20 @@ class input:
         self.tumor_het_file = args.tumor_het_data_path
         self.normal_het_file = args.normal_het_data_path
         self.exac_db_file = args.exac_data_path
-        self.mutation_prior = args.mutation_prior
-        self.TiN_prior = args.TiN_prior
+        if type(args.mutation_prior) == str:
+            self.mutation_prior = float(args.mutation_prior)
+        else:
+            self.mutation_prior = args.mutation_prior
+        if type(args.TiN_prior) == str:
+            self.mutation_prior = float(args.TiN_prior)
+        else:
+            self.TiN_prior = args.TiN_prior
         self.output_path = args.output_dir
         self.output_name = args.output_name
-        self.use_outlier_removal = args.use_outlier_removal
+        if type(args.use_outlier_removal) == str:
+            self.use_outlier_removal = bool(args.use_outlier_removal)
+        else:
+            self.use_outlier_removal = args.use_outlier_removal
         self.aSCNA_thresh = args.aSCNA_threshold
         # related to inputs from class functions
         self.call_stats_table = []
@@ -45,7 +55,6 @@ class input:
         else:
             self.call_stats_table['Chromosome'] = np.array(self.call_stats_table['contig']) - 1
         self.call_stats_table = self.call_stats_table[np.isfinite(self.call_stats_table['Chromosome'])]
-        self.call_stats_table = du.remove_exac_sites_from_call_stats(self.call_stats_table, self.exac_db_file)
         self.call_stats_table['genomic_coord_x'] = du.hg19_to_linear_positions(
             np.array(self.call_stats_table['Chromosome']), np.array(self.call_stats_table['position']))
         self.n_calls_in = len(self.call_stats_table)
@@ -165,7 +174,7 @@ class output:
     def calculate_joint_estimate(self):
         # do not use SSNV based estimate if it exceeds 0.3 (this estimate can be unreliable at high TiNs due to
         # germline events)
-        if self.ssnv_based_model.TiN <= 0.3:
+        if self.ssnv_based_model.TiN <= 0.3 and ~np.isnan(self.ascna_based_model.TiN):
             # combine independent likelihoods
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
             # normalize likelihood to calculate posterior
@@ -181,15 +190,17 @@ class output:
                     np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
                      x[1] > 0.975)]
 
-            self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
             self.TiN_int = np.nanargmax(self.joint_posterior)
+            self.TiN = self.TiN_range[self.TiN_int]
             print 'joint TiN estimate = ' + str(self.TiN)
-        else:
+        # use only ssnv based model
+        elif ~np.isnan(self.ascna_based_model.TiN):
             # otherwise TiN estimate is = to aSCNA estimate
             print 'SSNV based TiN estimate exceed 0.3 using only aSCNA based estimate'
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood
             self.joint_posterior = np.exp(
                 self.ascna_based_model.TiN_likelihood - np.nanmax(self.ascna_based_model.TiN_likelihood))
+            self.joint_posterior = np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))
             self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(
                 np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
                                                   x[1] > 0.025)]
@@ -197,8 +208,36 @@ class output:
                 next(x[0] for x in enumerate(np.cumsum(
                     np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
                      x[1] > 0.975)]
-            self.TiN = self.TiN_range[np.nanargmax(self.joint_posterior)]
             self.TiN_int = np.nanargmax(self.joint_posterior)
+            self.TiN = self.TiN_range[self.TiN_int]
+        # use only aSCNA based estimate
+        elif ~np.isnan(self.ssnv_based_model.TiN):
+            print 'No aSCNAs only using SSNV based model'
+            self.joint_log_likelihood = self.ssnv_based_model.TiN_likelihood
+            self.joint_posterior = np.exp(
+                self.ssnv_based_model.TiN_likelihood - np.nanmax(self.ssnv_based_model.TiN_likelihood))
+            self.joint_posterior = np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))
+            self.CI_tin_low = self.TiN_range[next(x[0] for x in enumerate(
+                np.cumsum(np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                                                  x[1] > 0.025)]
+            self.CI_tin_high = self.TiN_range[
+                next(x[0] for x in enumerate(np.cumsum(
+                    np.ma.masked_array(np.true_divide(self.joint_posterior, np.nansum(self.joint_posterior))))) if
+                     x[1] > 0.975)]
+            self.TiN_int = np.nanargmax(self.joint_posterior)
+            self.TiN = self.TiN_range[self.TiN_int]
+
+        else:
+            print 'insuffcient data to generate TiN estimate'
+            sys.exit()
+        pH1 = self.joint_posterior[self.TiN_int]
+        pH0 = self.joint_posterior[0]
+        if np.true_divide(self.input.TiN_prior*pH1,(self.input.TiN_prior*pH1)+((1-self.input.TiN_prior)*pH0)) < 0.5 :
+            print 'insufficient evidence to justify TiN > 0'
+            self.joint_posterior = np.zeros([101, 1])
+            self.joint_posterior[0] = 1
+            self.TiN_int = 0
+            self.TiN = 0
 
     def reclassify_mutations(self):
         # calculate p(Somatic | given joint TiN estimate)
@@ -244,16 +283,16 @@ def main():
     parser.add_argument('--exac_data_path',
                         help='Path to exac af > 0.01 pickle. Can be generated by downloading ExAC VCF and running build_exac_pickle', required=False)
     # output related arguments
-    parser.add_argument('--output_name', required=False,
+    parser.add_argument('--output_name', required=True,
                         help='sample name')
     parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
     # model related parameters
     parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
-                        , required=False, default=0.15)
+                        , required=False, default=0.25)
     parser.add_argument('--aSCNA_threshold', help='minor allele fraction threshold for calling aSCNAs.'
                         , required=False, default=0.4)
     parser.add_argument('--TiN_prior', help='expected frequency of TiN contamination in sequencing setting used for model selection',
-                        required=False, default=0.2)
+                        required=False, default=1)
     parser.add_argument('--use_outlier_removal',
                         help='remove sites from recovered SSNVs where allele fractions significantly exceed predicted fraction',
                         required=False, default=True)
@@ -264,20 +303,22 @@ def main():
 
     # identify candidate mutations based on MuTect flags.
     # kept sites are flagged as KEEP or rejected for normal lod and/or alt_allele_in_normal
-    di.candidates = du.select_candidate_mutations(di.call_stats_table)
+    di.candidates = du.select_candidate_mutations(di.call_stats_table,di.exac_db_file)
 
     # generate SSNV based model using candidate sites
     ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior)
     ssnv_based_model.perform_inference()
 
     # identify aSCNAs and filter hets
-    di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
-    di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh)
-
-    # generate aSCNA based model
-    ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
-    ascna_based_model.perform_inference()
-
+    if len(di.seg_table)>0:
+        di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
+        di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh)
+        # generate aSCNA based model
+        ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
+        ascna_based_model.perform_inference()
+    else:
+        ascna_based_model = dascna.model(di.seg_table, di.het_table)
+        ascna_based_model.TiN = np.nan
     # combine models and reclassify mutations
     do = output(di, ssnv_based_model, ascna_based_model)
     do.calculate_joint_estimate()
@@ -285,13 +326,14 @@ def main():
     do.SSNVs.drop('Chromosome', axis=1, inplace=True)
 
     # make output directory if needed
-    if args.output_dir != '.':
-        os.makedirs(args.output_dir, exist_ok=True)
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
     # write deTiN reclassified SSNVs
     do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_SSNVs.txt', sep='\t',
                     index=None)
     # write plots
-    du.plot_kmeans_info(ascna_based_model, do.input.output_path, do.input.output_name)
+    if not np.isnan(ascna_based_model.TiN):
+        du.plot_kmeans_info(ascna_based_model, do.input.output_path, do.input.output_name)
     du.plot_TiN_models(do)
     du.plot_SSNVs(do)
     # write TiN and CIs
