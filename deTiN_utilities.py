@@ -79,7 +79,7 @@ def filter_hets_based_on_coverage(het_table):
     return het_table
 
 
-def filter_segments_based_on_size_f_and_tau(seg_table,aSCNA_thresh):
+def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh):
     seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < aSCNA_thresh,
                                                           seg_table['n_probes'] > 200, seg_table['tau'] > 0]))]
     seg_table.reset_index(inplace=True, drop=True)
@@ -90,7 +90,7 @@ def load_exac(exac_vcf):
     return
 
 
-def identify_aSCNAs(seg_table, het_table,aSCNA_thresh):
+def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
     # identify aSCNAs based on minor allele fraction of segments
     mu_af_n = np.mean(het_table['AF_N'])
     f_detin = np.zeros([len(seg_table), 1])
@@ -212,12 +212,16 @@ def plot_TiN_models(do):
     TiN_range = np.linspace(0, 1, num=101)
     if ~np.isnan(do.ascna_based_model.TiN):
         ascna = ax.plot(TiN_range,
-                    np.true_divide(np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood)),
-                                   np.nansum(np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood))))
-                    , 'r--', lw=1)
+                        np.true_divide(np.exp(
+                            do.ascna_based_model.TiN_likelihood - np.nanmax(do.ascna_based_model.TiN_likelihood)),
+                                       np.nansum(np.exp(do.ascna_based_model.TiN_likelihood - np.nanmax(
+                                           do.ascna_based_model.TiN_likelihood))))
+                        , 'r--', lw=1)
     ssnv = ax.plot(TiN_range,
-                   np.true_divide(np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood)),
-                                  np.nansum(np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood))))
+                   np.true_divide(
+                       np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood)),
+                       np.nansum(
+                           np.exp(do.ssnv_based_model.TiN_likelihood - np.nanmax(do.ssnv_based_model.TiN_likelihood))))
                    , 'b--', lw=1)
 
     joint = ax.plot(TiN_range, do.joint_posterior
@@ -256,10 +260,11 @@ def plot_SSNVs(do):
                labels=['Candidate Sites', 'Called w/o deTiN ', 'deTiN recovered', 'TiN_fit'])
     fig.set_dpi(300)
     fig.savefig(do.input.output_path + '/' + do.input.output_name + '_SSNVs_plot.png', bbox_inches='tight')
-    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_SSNVs_plot.eps',format='eps', bbox_inches='tight')
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_SSNVs_plot.eps', format='eps',
+                bbox_inches='tight')
 
 
-def select_candidate_mutations(call_stats_table,exac_db_file):
+def select_candidate_mutations(call_stats_table, exac_db_file):
     # filter sites in call stats table to those only rejected for presence in the normal
     failure_reasons = np.array(call_stats_table['failure_reasons'])
 
@@ -303,10 +308,10 @@ def fix_het_file_header(het_file):
     # allowing flexibility in het file headers to accommodate changing versions of GATK4 and other CN tools
     # in order to add support for your het file headers please modify the alternate header lists below
 
-    alternate_headers_position = ['POS', 'position', 'pos','Start_position']
+    alternate_headers_position = ['POS', 'position', 'pos', 'Start_position']
     alternate_headers_chromosome = ['CHR', 'chrom', 'Chromosome', 'chr', 'Chrom']
-    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count','i_t_alt_count']
-    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count','i_t_ref_count']
+    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count']
+    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count']
 
     required_headers = ['CONTIG', 'POSITION', 'ALT_COUNT', 'REF_COUNT']
 
@@ -434,6 +439,88 @@ def fix_seg_file_header(seg_file):
         return seg_file
 
 
+def read_indel_vcf(vcf,seg_table,indel_type):
+    # read strelka vcf
+    # headerline should be in this format: #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
+    indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None,low_memory=False)
+    if indel_type.lower() == 'strelka':
+        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO', 8: 'format', 6: 'filter', 9: 'normal', 10: 'tumor'},
+                       inplace=True)
+        counts_format = indel_table['format'][0].split(':')
+        depth_ix = counts_format.index('DP')
+        alt_indel_ix = counts_format.index('TIR')
+    elif indel_type.lower() == 'mutect2':
+        # CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL
+        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 9: 'tumor', 10: 'normal'},
+                           inplace=True)
+        counts_format = indel_table['format'][0].split(':')
+        depth_ix = counts_format.index('AD')
+
+    # parsing format line and file to determine required alt and ref columns
+    # we use "tier 1" read counts for varaints
+    n_depth = np.zeros([len(indel_table), 1])
+    n_alt_count = np.zeros([len(indel_table), 1])
+    n_ref_count = np.zeros([len(indel_table), 1])
+
+    t_depth = np.zeros([len(indel_table), 1])
+    t_alt_count = np.zeros([len(indel_table), 1])
+    t_ref_count = np.zeros([len(indel_table), 1])
+
+    for index, row in indel_table.iterrows():
+        spl_n = row['normal'].split(':')
+        spl_t = row['tumor'].split(':')
+        if indel_type.lower() == 'strelka':
+            n_depth[index] = int(spl_n[depth_ix])
+            n_alt_count[index] = int(spl_n[alt_indel_ix].split(',')[0])
+            n_ref_count[index] = n_depth[index] - n_alt_count[index]
+            t_depth[index] = int(spl_t[depth_ix])
+            t_alt_count[index] = int(spl_t[alt_indel_ix].split(',')[0])
+            t_ref_count[index] = t_depth[index] - t_alt_count[index]
+        if indel_type.lower() == 'mutect2':
+            n_alt_count[index] = int(spl_n[depth_ix].split(',')[1])
+            n_ref_count[index] = int(spl_n[depth_ix].split(',')[0])
+            n_depth[index] = n_alt_count[index]+n_ref_count[index]
+            t_alt_count[index] = int(spl_t[depth_ix].split(',')[1])
+            t_ref_count[index] = int(spl_t[depth_ix].split(',')[0])
+            t_depth[index] = t_alt_count[index] + t_ref_count[index]
+
+    indel_table['t_depth'] = t_depth
+    indel_table['t_alt_count'] = t_alt_count
+    indel_table['t_ref_count'] = t_ref_count
+
+    indel_table['n_depth'] = n_depth
+    indel_table['n_alt_count'] = n_alt_count
+    indel_table['n_ref_count'] = n_ref_count
+    # only consider sites which were rejected as germline or were passed
+
+    if type(indel_table['contig'][0]) == str :
+        indel_table['Chromosome'] = chr2num(indel_table['contig'])
+    else:
+        indel_table['Chromosome'] = indel_table['contig']-1
+    # add linear position field and consider only sites which are rejected as germline i.e. PASS or QSI_ref
+    indel_table = indel_table[np.isfinite(indel_table['Chromosome'])]
+    indel_table.reset_index(inplace=True, drop=True)
+    indel_table['genomic_coord_x'] = hg19_to_linear_positions(indel_table['Chromosome'], indel_table['position'])
+    if indel_type.lower() == 'strelka':
+        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'],['PASS','QSI_ref']))]
+        indel_table.reset_index(inplace=True, drop=True)
+    if indel_type.lower() == 'mutect2':
+        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal']))]
+        indel_table.reset_index(inplace=True, drop=True)
+    # annotate with acs data
+    f_acs = np.zeros([len(indel_table), 1]) + 0.5
+    tau = np.zeros([len(indel_table), 1]) + 2
+    for i, r in seg_table.iterrows():
+        f_acs[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
+                             np.array(indel_table['genomic_coord_x']) <= r['genomic_coord_end'])] = r.f
+        tau[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
+                           np.array(indel_table['genomic_coord_x']) <= r[
+                               'genomic_coord_end'])] = r.tau + 0.001
+    indel_table['tau'] = tau
+    indel_table['f_acs'] = f_acs
+
+    return indel_table
+
 def build_exac_pickle(exac_file):
     # create ExAC site dictionary from VCF file
     exac_site_info = {}
@@ -470,14 +557,13 @@ def remove_exac_sites_from_call_stats(call_stats_table, exac_file):
     # use ExAC vcf to filter likely germline variants out of candidate sites
     with open(exac_file, 'rb') as handle:
         exac_dict = pickle.load(handle)
-        keep = np.ones_like(call_stats_table['position'],dtype=bool)
+        keep = np.ones_like(call_stats_table['position'], dtype=bool)
     for index, row in call_stats_table.iterrows():
         key = str(row['contig']) + '_' + str(row['position'])
         try:
             exac_dict[key]
-            #print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
+            # print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
             keep[index] = False
         except KeyError:
             pass
     return call_stats_table[keep]
-
