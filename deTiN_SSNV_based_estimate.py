@@ -89,21 +89,22 @@ class model:
             n_het_ac_given_tin = np.multiply(exp_f, self.n_depth[:, np.newaxis])
 
             for TiN_idx, TiN in enumerate(self.TiN_range):
-                self.p_TiN_given_S[:, TiN_idx] += np.multiply(beta.pdf(self.normal_f[:], n_ac_given_tin[:, TiN_idx] + 1,
+                self.p_TiN_given_S[:, TiN_idx] += np.multiply(beta.cdf(self.normal_f[:]+.01, n_ac_given_tin[:, TiN_idx] + 1,
                                                                        self.n_depth[:] - n_ac_given_tin[:,
-                                                                                         TiN_idx] + 1) * 0.01,
+                                                                                         TiN_idx] + 1) - beta.cdf(self.normal_f[:], n_ac_given_tin[:, TiN_idx] + 1,
+                                                                       self.n_depth[:] - n_ac_given_tin[:,
+                                                                                         TiN_idx] + 1),
                                                               t_af_w[:, i])
                 self.p_TiN_given_het[:, TiN_idx] += np.multiply(
-                    beta.pdf(self.normal_f[:], n_het_ac_given_tin[:, TiN_idx] + 1,
-                             self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) * 0.01,
+                    beta.cdf(self.normal_f[:]+.01, n_het_ac_given_tin[:, TiN_idx] + 1,
+                             self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) -
+                    beta.cdf(self.normal_f[:], n_het_ac_given_tin[:, TiN_idx] + 1,
+                             self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) ,
                     t_af_w[:, i])
 
-        self.p_artifact = self.rv_tumor_af.pdf(self.normal_f) * 0.01
+        self.p_artifact = self.rv_tumor_af.cdf(self.normal_f+.01) - self.rv_tumor_af.cdf(self.normal_f)
         self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:, np.newaxis], self.p_TiN_given_het) + np.multiply(
             self.p_artifact[:, np.newaxis], 1 - self.p_TiN_given_het)
-        # weak uniform prior over TiN
-        #self.p_TiN_given_G = np.true_divide(self.p_TiN_given_G+1e-317,np.nansum(self.p_TiN_given_G+1e-317,axis=1)[:,np.newaxis])
-        #self.p_TiN_given_S = np.true_divide(self.p_TiN_given_S+1e-317,np.nansum(self.p_TiN_given_S+1e-317,axis=1)[:,np.newaxis])
     def expectation_of_z_given_TiN(self):
         # E step
         numerator = self.p_somatic * (self.p_TiN_given_S[:,self.TiN])

@@ -86,10 +86,6 @@ def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh):
     return seg_table
 
 
-def load_exac(exac_vcf):
-    return
-
-
 def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
     # identify aSCNAs based on minor allele fraction of segments
     mu_af_n = np.mean(het_table['AF_N'])
