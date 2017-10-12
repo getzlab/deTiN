@@ -28,7 +28,7 @@ class input:
         else:
             self.mutation_prior = args.mutation_prior
         if type(args.TiN_prior) == str:
-            self.mutation_prior = float(args.TiN_prior)
+            self.TiN_prior = float(args.TiN_prior)
         else:
             self.TiN_prior = args.TiN_prior
         self.output_path = args.output_dir
@@ -258,7 +258,7 @@ class output:
         # expected normal allele fraction given TiN and tau
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f, self.ssnv_based_model.CN_ratio[:, self.TiN_int])
         # probability of normal allele fraction less than or equal to predicted fraction
-        self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN)
+        self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN +0.01)
         if self.use_outlier_threshold:
             # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
             self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN'] > self.threshold,
