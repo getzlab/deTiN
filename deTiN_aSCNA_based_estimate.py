@@ -62,12 +62,18 @@ class model:
         seg_var = np.zeros([len(self.segs), 1])
         TiN_MAP = np.zeros([len(self.segs), 1])
         TiN_likelihood = np.zeros([len(self.segs), 101])
+        TiN_post = np.zeros([len(self.segs), 101])
         counter = 0
         for seg_id, seg in self.segs.iterrows():
             self.seg_likelihood[seg_id] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)]), axis=0)
             seg_var[counter] = np.nanvar(np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
-            TiN_likelihood[counter, :] = np.sum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0)
+            TiN_likelihood[counter, :] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)]), axis=0)
+            prior = np.true_divide(np.ones([1, 101]), 101)
+            TiN_post[counter, :] = TiN_likelihood[counter, :] + np.log(prior)
+            TiN_post[counter, :] = TiN_post[counter, :] + (1 - np.max(TiN_post[counter, :]))
+            TiN_post[counter, :] = np.exp(TiN_post[counter, :])
+            TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.sum(TiN_post[counter, :]))
             counter += 1
         self.segs.loc[:, ('TiN_var')] = seg_var
         self.segs.loc[:, ('TiN_MAP')] = TiN_MAP
@@ -128,7 +134,7 @@ class model:
 
             self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0)
-            posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
+            posterior = np.exp(self.TiN_likelihood -np.nanmax(self.TiN_likelihood))
             self.CI_tin_low = self.TiN_range[
                     next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                          if x[1] > 0.025)]
