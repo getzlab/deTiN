@@ -75,36 +75,42 @@ class model:
 
     def cluster_segments(self):
         K = range(1, 4)
-        N = len(self.segs['TiN_MAP'])
+        N = len(self.hets['seg_id'])
+        self.segs.reset_index(inplace=True, drop=False)
         tin_data = np.array(self.segs['TiN_MAP'])
         km = [kmeans(tin_data, k, iter=1000) for k in K]
         centroids = [cent for (cent, var) in km]
         squared_distance_to_centroids = [np.power(np.subtract(tin_data[:, np.newaxis], cent), 2) for cent in
                                          centroids]
-        self.sum_squared_distance = [sum(np.min(d,axis=1))/N for d in squared_distance_to_centroids]
+        self.sum_squared_distance = [sum(np.min(d, axis=1)) / N for d in squared_distance_to_centroids]
         cluster_assignment = [np.argmin(d, axis=1) for d in squared_distance_to_centroids]
+        het_tin_map = np.argmax(self.p_TiN, axis=1)
+        self.cl_distance_points = np.zeros([3, 3])
+        for k, clust in enumerate(cluster_assignment):
+            for idx, row in self.segs.iterrows():
+                self.cl_distance_points[k, clust[idx]] += np.sum(
+                    np.power(het_tin_map[self.hets['seg_id'] == row['index']] - centroids[k][clust[idx]], 2))
 
-        cl_var = np.zeros([3, 3])
-        for m in range(3):
-            for i in range(0, m + 1):
-                cl_var[m, i] = (np.true_divide(1.0, (np.sum(cluster_assignment[m] == i)))) * sum(
-                    np.power(np.subtract(tin_data[cluster_assignment[m] == i], centroids[m][i]), 2))
-            p = [1, 2, 3]
-            self.cl_var = cl_var
-            self.bic = np.multiply(N, self.sum_squared_distance).T + np.multiply(p, np.log(N))
-            dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
-            dist_btwn_c2 = np.abs(np.diff(centroids[1]))
-            if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 > 2 * np.nanmax(np.sqrt(cl_var[1,:])):
-                solution_idx = np.nanargmin(self.bic[0:1])
-                self.cluster_assignment = cluster_assignment[solution_idx]
-                self.centroids = centroids[solution_idx]
-            if dist_btwn_c3 < 2 * np.nanmax(np.sqrt(cl_var[2,:])) and dist_btwn_c2 < 2 * np.nanmax(np.sqrt(cl_var[1,:])):
-                self.cluster_assignment = cluster_assignment[0]
-                self.centroids = centroids[0]
-            else:
-                solution_idx = np.nanargmin(self.bic)
-                self.cluster_assignment = cluster_assignment[solution_idx]
-                self.centroids = centroids[solution_idx]
+        self.cl_var = np.sqrt(
+            np.true_divide(self.cl_distance_points, len(self.hets['seg_id'])))
+        p = [1, 2, 3]
+        delta_bic = [0, 10, 20]
+        self.bic = (np.multiply(N, np.log(np.true_divide(np.sum(self.cl_distance_points, axis=1), N))) + np.multiply(p,
+                                                                                                                     np.log(
+                                                                                                                         N))) + delta_bic
+        dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
+        dist_btwn_c2 = np.abs(np.diff(centroids[1]))
+        if dist_btwn_c3 < 2 * np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 > 2 * np.nanmax(self.cl_var[1, :]):
+            solution_idx = np.nanargmin(self.bic[0:1])
+            self.cluster_assignment = cluster_assignment[solution_idx]
+            self.centroids = centroids[solution_idx]
+        if dist_btwn_c3 < 2 * np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 < 2 * np.nanmax(self.cl_var[1, :]):
+            self.cluster_assignment = cluster_assignment[0]
+            self.centroids = centroids[0]
+        else:
+            solution_idx = np.nanargmin(self.bic)
+            self.cluster_assignment = cluster_assignment[solution_idx]
+            self.centroids = centroids[solution_idx]
 
     def perform_inference(self):
         # MAP estimation of TiN using copy number data
@@ -116,18 +122,20 @@ class model:
         if np.max(self.cluster_assignment) > 0:
             print 'detected ' + str(np.max(self.cluster_assignment)+1) +' clusters'
             if self.reporting_cluster == 'mode':
-                mode_cluster = mode(self.cluster_assignment)[0][0]
-                self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0))]
-                self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0)
-                posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
-                self.CI_tin_low = self.TiN_range[
+                    mode_cluster = mode(self.cluster_assignment)[0][0]
+            elif self.reporting_cluster == 'min':
+                    mode_cluster = self.cluster_assignment[np.argmin(self.centroids)]
+
+            self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0))]
+            self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix[self.cluster_assignment==mode_cluster,:],axis=0)
+            posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
+            self.CI_tin_low = self.TiN_range[
                     next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                          if x[1] > 0.025)]
-                self.CI_tin_high = self.TiN_range[
+            self.CI_tin_high = self.TiN_range[
                     next(x[0] for x in enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                          if x[1] > 0.975)]
-                print 'aSCNA based TiN estimate from modal TiN cluster :  ' +\
-                      str(self.TiN)
+            print 'aSCNA based TiN estimate from selected TiN cluster :  ' + str(self.TiN)
         else:
             self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix,axis=0))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix,axis=0)

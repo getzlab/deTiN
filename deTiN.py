@@ -37,7 +37,10 @@ class input:
             self.use_outlier_removal = bool(args.use_outlier_removal)
         else:
             self.use_outlier_removal = args.use_outlier_removal
-        self.aSCNA_thresh = args.aSCNA_threshold
+        if type(args.aSCNA_threshold) == str:
+            self.aSCNA_thresh = float(args.aSCNA_threshold)
+        else:
+            self.aSCNA_thresh = args.aSCNA_threshold
         # related to inputs from class functions
         self.call_stats_table = []
         self.seg_table = []
