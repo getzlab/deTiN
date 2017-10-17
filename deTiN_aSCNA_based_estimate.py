@@ -75,6 +75,7 @@ class model:
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
             TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.sum(TiN_post[counter, :]))
             counter += 1
+        self.TiN_post_seg = TiN_post
         self.segs.loc[:, ('TiN_var')] = seg_var
         self.segs.loc[:, ('TiN_MAP')] = TiN_MAP
         self.TiN_likelihood_matrix = TiN_likelihood
