@@ -324,11 +324,11 @@ def main():
     parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
     # model related parameters
     parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
-                        , required=False, default=0.25)
+                        , required=False, default=0.15)
     parser.add_argument('--aSCNA_threshold', help='minor allele fraction threshold for calling aSCNAs.'
-                        , required=False, default=0.4)
+                        , required=False, default=0.1)
     parser.add_argument('--TiN_prior', help='expected frequency of TiN contamination in sequencing setting used for model selection',
-                        required=False, default=1)
+                        required=False, default=0.5)
     parser.add_argument('--use_outlier_removal',
                         help='remove sites from recovered SSNVs where allele fractions significantly exceed predicted fraction',
                         required=False, default=True)

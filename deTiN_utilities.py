@@ -80,7 +80,7 @@ def filter_hets_based_on_coverage(het_table):
 
 
 def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh):
-    seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < aSCNA_thresh,
+    seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < 0.5 - aSCNA_thresh,
                                                           seg_table['n_probes'] > 200, seg_table['tau'] > 0]))]
     seg_table.reset_index(inplace=True, drop=True)
     return seg_table
@@ -125,7 +125,7 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
         np.logical_and.reduce(np.array([np.array(seg_table['fishers_p_convergent_seg'] * len(seg_table)) > 0.05,
                                         seg_table['n_snps_above_mu'] > 10,
                                         seg_table['n_snps_below_mu'] > 10,
-                                        seg_table['f_detin'] <= aSCNA_thresh,
+                                        seg_table['f_detin'] <= 0.5 - aSCNA_thresh,
                                         seg_table['f_variance'] < 0.025]))]
     return aSCNAs
 
@@ -268,7 +268,6 @@ def select_candidate_mutations(call_stats_table, exac_db_file):
 
     candidate_sites = call_stats_table[np.logical_or.reduce(np.array([np.array(call_stats_table['judgement']) == 'KEEP',
                                                                       failure_reasons == 'normal_lod,alt_allele_in_normal',
-                                                                      failure_reasons == 'normal_lod',
                                                                       failure_reasons == 'alt_allele_in_normal']))]
     candidate_sites['t_depth'] = candidate_sites['t_alt_count'] + candidate_sites['t_ref_count']
     candidate_sites['n_depth'] = candidate_sites['n_alt_count'] + candidate_sites['n_ref_count']
