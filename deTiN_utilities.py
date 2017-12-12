@@ -103,15 +103,18 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
                                            np.sum(seg_hets['AF_N']) > mu_af_n])
         n_snps_below_mu[seg_id] = np.mean([np.sum(seg_hets['AF_T'] <= mu_af_n),
                                            np.sum(seg_hets['AF_N']) <= mu_af_n])
-        fe_tuple = fisher_exact([[np.sum(np.logical_and(seg_hets['AF_T'] > mu_af_n,
-                                                        seg_hets['AF_N'] > mu_af_n)),
-                                  np.sum(np.logical_and(seg_hets['AF_T'] > mu_af_n,
-                                                        seg_hets['AF_N'] <= mu_af_n))],
-                                 [np.sum(np.logical_and(seg_hets['AF_T'] <= mu_af_n,
-                                                        seg_hets['AF_N'] > mu_af_n)),
-                                  np.sum(np.logical_and(seg_hets['AF_T'] <= mu_af_n,
-                                                        seg_hets['AF_N'] <= mu_af_n))]], 'less')
-        fishers_p_convergent_seg[seg_id] = fe_tuple[1]
+        try:
+            fe_tuple = fisher_exact([[np.sum(np.logical_and(seg_hets['AF_T'] > mu_af_n,
+                                                            seg_hets['AF_N'] > mu_af_n)),
+                                      np.sum(np.logical_and(seg_hets['AF_T'] > mu_af_n,
+                                                            seg_hets['AF_N'] <= mu_af_n))],
+                                     [np.sum(np.logical_and(seg_hets['AF_T'] <= mu_af_n,
+                                                            seg_hets['AF_N'] > mu_af_n)),
+                                      np.sum(np.logical_and(seg_hets['AF_T'] <= mu_af_n,
+                                                            seg_hets['AF_N'] <= mu_af_n))]], 'less')
+            fishers_p_convergent_seg[seg_id] = fe_tuple[1]
+        except ValueError:
+            sys.stderr.write("Could not run Fisher's Exact test for segment ID {} because segment was filtered out\n".format(seg_id))
     seg_table['f_detin'] = f_detin
     seg_table['f_variance'] = f_variance
     seg_table['n_snps_above_mu'] = n_snps_above_mu
@@ -307,8 +310,8 @@ def fix_het_file_header(het_file):
 
     alternate_headers_position = ['POS', 'position', 'pos', 'Start_position']
     alternate_headers_chromosome = ['CHR', 'chrom', 'Chromosome', 'chr', 'Chrom']
-    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count']
-    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count']
+    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count']
+    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count']
 
     required_headers = ['CONTIG', 'POSITION', 'ALT_COUNT', 'REF_COUNT']
 
