@@ -307,8 +307,8 @@ def fix_het_file_header(het_file):
 
     alternate_headers_position = ['POS', 'position', 'pos', 'Start_position']
     alternate_headers_chromosome = ['CHR', 'chrom', 'Chromosome', 'chr', 'Chrom']
-    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count']
-    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count']
+    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count']
+    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count']
 
     required_headers = ['CONTIG', 'POSITION', 'ALT_COUNT', 'REF_COUNT']
 
