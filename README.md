@@ -12,17 +12,27 @@ python deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_remov
 See project Wiki for full description of required fields for input data.
 
 Input data:
+
 –-mutation_data_path mutation statistics file (MuTect call stats file (or similar variants file)).
+
 –-cn_data_path allelic copy number segmentation file (GATK4 AllelicCNV seg file).
+
 –-tumor_het_data heterozygous SNP variant counts in the tumor sample. (GATK4 tumor het cov file).
+
 –-normal_het_data heterozygous SNP variant counts in the normal sample. (GATK4 normal het cov file).
+
 –-exac_data_path pickle file of minor allele fraction > 0.01 ExAC sites. 
 
 Parameters:
+
 –-output_name sample name
+
 –-output_dir output directory
+
 –-mutation_prior fraction of rare germline sites to somatic sites. Default = 0.15
+
 –-aSCNA_threshold minor allele fraction threshold for calling aSCNAs. Default = 0.1
+
 –-TiN_prior fraction of samples which user expects to be contaminated. This is used for model selection, set to 0.5 if unknown. Default = 0.5
 
 ## Motivation
