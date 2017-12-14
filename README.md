@@ -3,6 +3,7 @@
 DeTiN estimates tumor in normal (TiN) based on tumor and matched normal sequencing data. The estimate is based on both candidate SSNVs and aSCNAs. DeTiN then applies the joint TiN estimate to reclassify SSNVs and InDels as somatic or germline. 
 
 ## Code Example
+Please see github wiki for description of input files. 
 
 python deTiN.py --mutation_data_path example_data/HCC_10_90.call_stats.pon_removed.txt --cn_data_path example_data/HCC-1143_100_T-sim-final.acs.seg --tumor_het_data example_data/HCC_10_90.tumor.hets.tsv --normal_het_data example_data/HCC_10_90.normal.hets.tsv --exac_data_path example_data/exac.pickle_high_af --output_name 10_percent_TiN_simulation --indel_data_path example_data/MuTect2.call_stats.txt --indel_data_type MuTect2 --output_dir example_data/
 ## Motivation
@@ -14,6 +15,8 @@ Genomic characterization is vital to the understanding and treatment of cancer. 
 Scripts are standalone but require Numpy, Pandas, Scipy and Python 2.7. 
 
 git clone https://github.com/broadinstitute/deTiN.git
+
+deTiN is also available as a docker image: docker pull broadinstitute/detin
 
 ## Example Data
 
