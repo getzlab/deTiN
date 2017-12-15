@@ -114,7 +114,7 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
                                                             seg_hets['AF_N'] <= mu_af_n))]], 'less')
             fishers_p_convergent_seg[seg_id] = fe_tuple[1]
         except ValueError:
-            sys.stderr.write("Could not run Fisher's Exact test for segment ID {} because segment was filtered out\n".format(seg_id))
+            fishers_p_convergent_seg[seg_id] = 1
     seg_table['f_detin'] = f_detin
     seg_table['f_variance'] = f_variance
     seg_table['n_snps_above_mu'] = n_snps_above_mu
