@@ -262,6 +262,8 @@ class output:
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f, self.ssnv_based_model.CN_ratio[:, self.TiN_int])
         # probability of normal allele fraction less than or equal to predicted fraction
         self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN +0.01)
+        if self.TiN_int == 0 :
+            print 'Estimated 0 TiN no SSNVs will be recovered outputing deTiN statistics for each site'
         if self.use_outlier_threshold:
             # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
             self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN'] > self.threshold,
@@ -280,7 +282,9 @@ class output:
             af_n_given_TiN = np.multiply(indel_model.tumor_f, indel_model.CN_ratio[:, self.TiN_int])
             self.indels.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
             self.indels.loc[:, 'p_outlier'] = indel_model.rv_normal_af.cdf(af_n_given_TiN)
-            if self.use_outlier_threshold:
+            if self.TiN_int == 0 :
+                print 'Estimated 0 TiN no indels will be recovered outputing deTiN statistics for each site'
+            elif self.use_outlier_threshold:
                 # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
                 self.indels['filter'][np.logical_and(self.indels['p_somatic_given_TiN'] > self.threshold,
                                                      self.indels['p_outlier'] >= 0.01)] = 'PASS'
