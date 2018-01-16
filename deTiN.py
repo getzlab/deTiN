@@ -23,6 +23,10 @@ class input:
         self.exac_db_file = args.exac_data_path
         self.indel_file = args.indel_data_path
         self.indel_type = args.indel_data_type
+        if type(args.weighted_classification):
+            self.weighted_classification = bool(args.weighted_classification)
+        else:
+            self.weighted_classification = args.weighted_classification
         if type(args.mutation_prior) == str:
             self.mutation_prior = float(args.mutation_prior)
         else:
@@ -31,6 +35,10 @@ class input:
             self.TiN_prior = float(args.TiN_prior)
         else:
             self.TiN_prior = args.TiN_prior
+        if type(args.resolution) == str:
+            self.resolution = int(args.resolution)
+        else:
+            self.resolution = args.resolution
         self.output_path = args.output_dir
         self.output_name = args.output_name
         if type(args.use_outlier_removal) == str:
@@ -168,14 +176,14 @@ class output:
         self.ascna_based_model = ascna_based_model
         # useful outputs
         self.SSNVs = input.candidates
-        self.joint_log_likelihood = np.zeros([101, 1])
-        self.joint_posterior = np.zeros([101, 1])
+        self.joint_log_likelihood = np.zeros([self.input.resolution, 1])
+        self.joint_posterior = np.zeros([self.input.resolution, 1])
         self.CI_tin_high = []
         self.CI_tin_low = []
         self.TiN = []
 
         # variables
-        self.TiN_range = np.linspace(0, 1, num=101)
+        self.TiN_range = np.linspace(0, 1, num=self.input.resolution)
         self.TiN_int = 0
         # threshold for accepting variants based on the predicted somatic assignment
         # if p(S|TiN) exceeds threshold we keep the variant.
@@ -247,16 +255,29 @@ class output:
         pH0 = self.joint_posterior[0]
         if np.true_divide(self.input.TiN_prior*pH1,(self.input.TiN_prior*pH1)+((1-self.input.TiN_prior)*pH0)) < 0.5 :
             print 'insufficient evidence to justify TiN > 0'
-            self.joint_posterior = np.zeros([101, 1])
+            self.joint_posterior = np.zeros([self.input.resolution, 1])
             self.joint_posterior[0] = 1
             self.TiN_int = 0
             self.TiN = 0
 
     def reclassify_mutations(self):
         # calculate p(Somatic | given joint TiN estimate)
-        numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, self.TiN_int]
-        denominator = numerator + np.array(
-            [1 - self.ssnv_based_model.p_somatic] * np.nan_to_num(self.ssnv_based_model.p_TiN_given_G[:, self.TiN_int]))
+        if self.input.weighted_classification == True:
+            numerator = np.zeros(len(self.ssnv_based_model.p_TiN_given_S))
+            denominator = np.zeros(len(self.ssnv_based_model.p_TiN_given_S))
+            for idx,p in enumerate(self.joint_posterior):
+                if p > 0.001:
+                    num_iter = (p *self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, idx])
+                    numerator = numerator + num_iter
+                    denom_iter = num_iter + p*(np.array(
+                        [1 - self.ssnv_based_model.p_somatic] * np.nan_to_num(
+                            self.ssnv_based_model.p_TiN_given_G[:, idx])))
+                    denominator = denominator + denom_iter
+
+        else:
+            numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, self.TiN_int]
+            denominator = numerator + np.array(
+                [1 - self.ssnv_based_model.p_somatic] * np.nan_to_num(self.ssnv_based_model.p_TiN_given_G[:, self.TiN_int]))
         self.SSNVs.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
         # expected normal allele fraction given TiN and tau
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f, self.ssnv_based_model.CN_ratio[:, self.TiN_int])
@@ -272,7 +293,7 @@ class output:
             self.SSNVs['judgement'][self.SSNVs['p_somatic_given_TiN'] > self.threshold] = 'KEEP'
         if not self.input.indel_file == 'None':
             print 'reclassifying indels'
-            indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior)
+            indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior,self.input.resolution)
             indel_model.generate_conditional_ps()
             self.indels = self.input.indel_table
             numerator = indel_model.p_somatic * indel_model.p_TiN_given_S[:, self.TiN_int]
@@ -336,6 +357,11 @@ def main():
     parser.add_argument('--use_outlier_removal',
                         help='remove sites from recovered SSNVs where allele fractions significantly exceed predicted fraction',
                         required=False, default=True)
+    parser.add_argument('--resolution', help='number of TiN bins to consider default = 101 corresponds to 0.01 TiN levels'
+                        , required=False, default=101)
+    parser.add_argument('--weighted_classification',
+                        help='integrate variant classification over all values of TiN'
+                        , required=False, default=False)
 
     args = parser.parse_args()
     di = input(args)
@@ -346,7 +372,7 @@ def main():
     di.candidates = du.select_candidate_mutations(di.call_stats_table,di.exac_db_file)
 
     # generate SSNV based model using candidate sites
-    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior)
+    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution)
     ssnv_based_model.perform_inference()
 
     # identify aSCNAs and filter hets
@@ -354,10 +380,10 @@ def main():
         di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
         di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh)
         # generate aSCNA based model
-        ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets)
+        ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets,di.resolution)
         ascna_based_model.perform_inference()
     else:
-        ascna_based_model = dascna.model(di.seg_table, di.het_table)
+        ascna_based_model = dascna.model(di.seg_table, di.het_table,di.resolution)
         ascna_based_model.TiN = np.nan
     # combine models and reclassify mutations
     do = output(di, ssnv_based_model, ascna_based_model)

@@ -208,7 +208,7 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
 
 def plot_TiN_models(do):
     fig, ax = plt.subplots(1, 1)
-    TiN_range = np.linspace(0, 1, num=101)
+    TiN_range = np.linspace(0, 1, num=do.input.resolution)
     if ~np.isnan(do.ascna_based_model.TiN):
         ascna = ax.plot(TiN_range,
                         np.true_divide(np.exp(
@@ -238,7 +238,7 @@ def plot_TiN_models(do):
 
 def plot_SSNVs(do):
     fig, ax = plt.subplots(1, 1)
-    TiN_fit = ax.plot(np.linspace(0, 1, 101), np.multiply(do.TiN, np.linspace(0, 1, 101)), '--', lw=1, alpha=1,
+    TiN_fit = ax.plot(np.linspace(0, 1, do.input.resolution), np.multiply(do.TiN, np.linspace(0, 1, do.input.resolution)), '--', lw=1, alpha=1,
                       color='#1D1D1D')
     background = ax.plot(do.ssnv_based_model.tumor_f, do.ssnv_based_model.normal_f
                          , '.', lw=0.1, alpha=0.75, color=[0.75, 0.75, 0.75])

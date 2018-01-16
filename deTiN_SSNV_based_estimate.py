@@ -12,12 +12,12 @@ class model:
      TiN estimate : model.TiN
      Somatic classification of SSNVs : model.E_z (E_z > 0.5 -> somatic)"""
 
-    def __init__(self, candidate_sites, p_somatic):
+    def __init__(self, candidate_sites, p_somatic,resolution):
         # variables follow notation:
         # ac = allele count n = normal t = tumor
 
         # Variables for SSNV fit
-        self.TiN_range = np.linspace(0, 1, num=101)
+        self.TiN_range = np.linspace(0, 1, num=resolution)
         self.af = np.linspace(0.005, 1, num=200)
 
         # observed data
@@ -60,13 +60,13 @@ class model:
         self.rv_tumor_af = beta(self.t_alt_count + 1, self.t_ref_count + 1)
 
         # conditionals
-        self.p_TiN_given_S = np.zeros([self.number_of_sites, 101])
-        self.p_TiN_given_G = np.zeros([self.number_of_sites, 101])
-        self.p_TiN_given_het = np.zeros([self.number_of_sites, 101])
+        self.p_TiN_given_S = np.zeros([self.number_of_sites, resolution])
+        self.p_TiN_given_G = np.zeros([self.number_of_sites, resolution])
+        self.p_TiN_given_het = np.zeros([self.number_of_sites, resolution])
         self.p_artifact = np.zeros([self.number_of_sites, 1])
 
         # likelihood
-        self.TiN_likelihood = np.zeros([101, 1])
+        self.TiN_likelihood = np.zeros([resolution, 1])
 
     def generate_conditional_ps(self):
         # p(TiN|Somatic) and p(TiN|Germline)

@@ -15,14 +15,14 @@ class model:
        only usable when tumors have sufficient allele imbalance (>200 probes and >10 SNPs under loh).
         TiN estimate : model.TiN"""
 
-    def __init__(self, aSCNA_segs, aSCNA_hets):
+    def __init__(self, aSCNA_segs, aSCNA_hets, resolution):
 
         # input data
         self.segs = aSCNA_segs
         self.hets = aSCNA_hets
-
+        self.resolution = resolution
         # Variables for fit
-        self.TiN_range = np.linspace(0, 1, num=101)
+        self.TiN_range = np.linspace(0, 1, num=resolution)
         self.af = np.linspace(0.005, 1, num=200)
 
         # model parameters
@@ -33,11 +33,11 @@ class model:
         self.CN_ratio = np.divide(self.tin_correct_tau, np.array(self.tin_correct_tau + self.tin_correct_normal_tau))
         self.p_TiN = np.zeros([len(self.hets), len(self.TiN_range)])
         self.seg_likelihood = dict()
-        self.TiN_likelihood_matrix = np.zeros([len(self.segs), 101])
+        self.TiN_likelihood_matrix = np.zeros([len(self.segs), resolution])
         self.reporting_cluster = 'mode'
 
         # model outputs
-        self.TiN_likelihood = np.zeros([101, 1])
+        self.TiN_likelihood = np.zeros([resolution, 1])
         self.TiN = 0
         self.sum_squared_distance = np.zeros([3,1])
         self.cluster_assignment = np.zeros([len(self.segs['Chromosome']),1])
@@ -61,15 +61,15 @@ class model:
 
         seg_var = np.zeros([len(self.segs), 1])
         TiN_MAP = np.zeros([len(self.segs), 1])
-        TiN_likelihood = np.zeros([len(self.segs), 101])
-        TiN_post = np.zeros([len(self.segs), 101])
+        TiN_likelihood = np.zeros([len(self.segs), self.resolution])
+        TiN_post = np.zeros([len(self.segs), self.resolution])
         counter = 0
         for seg_id, seg in self.segs.iterrows():
             self.seg_likelihood[seg_id] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)]), axis=0)
             seg_var[counter] = np.nanvar(np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)], axis=0))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
             TiN_likelihood[counter, :] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id,dtype=bool)]), axis=0)
-            prior = np.true_divide(np.ones([1, 101]), 101)
+            prior = np.true_divide(np.ones([1, self.resolution]), self.resolution)
             TiN_post[counter, :] = TiN_likelihood[counter, :] + np.log(prior)
             TiN_post[counter, :] = TiN_post[counter, :] + (1 - np.max(TiN_post[counter, :]))
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
