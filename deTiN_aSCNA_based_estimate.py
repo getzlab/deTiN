@@ -61,7 +61,7 @@ class model:
                 self.p_TiN[:, TiN_idx] += np.multiply(rv_normal_af.pdf(exp_f[:, TiN_idx]) * 0.01, t_af_w[:, i])
 
         seg_var = np.zeros([len(self.segs), 1])
-        TiN_MAP = np.zeros([len(self.segs), 1])
+        TiN_MAP = np.zeros([len(self.segs), 1],dtype=int)
         TiN_likelihood = np.zeros([len(self.segs), self.resolution])
         TiN_post = np.zeros([len(self.segs), self.resolution])
         counter = 0
@@ -81,7 +81,7 @@ class model:
             counter += 1
         self.TiN_post_seg = TiN_post
         self.segs.loc[:, ('TiN_var')] = seg_var
-        self.segs.loc[:, ('TiN_MAP')] = TiN_MAP
+        self.segs.loc[:, ('TiN_MAP')] = self.TiN_range[TiN_MAP]*100
         self.TiN_likelihood_matrix = TiN_likelihood
 
     def cluster_segments(self):

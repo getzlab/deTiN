@@ -89,16 +89,16 @@ class model:
             n_het_ac_given_tin = np.multiply(exp_f, self.n_depth[:, np.newaxis])
 
             for TiN_idx, TiN in enumerate(self.TiN_range):
-                self.p_TiN_given_S[:, TiN_idx] += np.multiply(beta.cdf(self.normal_f[:]+.01, n_ac_given_tin[:, TiN_idx] + 1,
+                self.p_TiN_given_S[:, TiN_idx] += np.multiply(beta._cdf(self.normal_f[:]+.01, n_ac_given_tin[:, TiN_idx] + 1,
                                                                        self.n_depth[:] - n_ac_given_tin[:,
-                                                                                         TiN_idx] + 1) - beta.cdf(self.normal_f[:], n_ac_given_tin[:, TiN_idx] + 1,
+                                                                                         TiN_idx] + 1) - beta._cdf(self.normal_f[:], n_ac_given_tin[:, TiN_idx] + 1,
                                                                        self.n_depth[:] - n_ac_given_tin[:,
                                                                                          TiN_idx] + 1),
                                                               t_af_w[:, i])
                 self.p_TiN_given_het[:, TiN_idx] += np.multiply(
-                    beta.cdf(self.normal_f[:]+.01, n_het_ac_given_tin[:, TiN_idx] + 1,
+                    beta._cdf(self.normal_f[:]+.01, n_het_ac_given_tin[:, TiN_idx] + 1,
                              self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) -
-                    beta.cdf(self.normal_f[:], n_het_ac_given_tin[:, TiN_idx] + 1,
+                    beta._cdf(self.normal_f[:], n_het_ac_given_tin[:, TiN_idx] + 1,
                              self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) ,
                     t_af_w[:, i])
 

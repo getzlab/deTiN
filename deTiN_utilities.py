@@ -185,6 +185,7 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     plt.xlabel('Number of clusters')
     plt.ylabel('Average within-cluster sum of squares')
     plt.title('KMeans residual')
+    plt.xticks([1,2,3])
     fig.set_dpi(150)
     fig.savefig(output_path + '/' + sample_name + '_KmeansEval_plot.png', bbox_inches='tight')
 
