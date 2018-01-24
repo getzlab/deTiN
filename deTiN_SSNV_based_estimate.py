@@ -12,7 +12,7 @@ class model:
      TiN estimate : model.TiN
      Somatic classification of SSNVs : model.E_z (E_z > 0.5 -> somatic)"""
 
-    def __init__(self, candidate_sites, p_somatic,resolution):
+    def __init__(self, candidate_sites, p_somatic,resolution = 101, f_thresh = 0.15 , depth = 15):
         # variables follow notation:
         # ac = allele count n = normal t = tumor
 
@@ -33,7 +33,7 @@ class model:
         self.t_depth = self.t_alt_count + self.t_ref_count
         self.tumor_f = np.true_divide(self.t_alt_count, self.t_depth)
         self.number_of_sites = len(self.n_alt_count)
-        self.candidate_sites = np.logical_and(np.logical_and(self.tumor_f > .15, self.t_depth > 15), self.n_depth > 15)
+        self.candidate_sites = np.logical_and(np.logical_and(self.tumor_f > f_thresh, self.t_depth > depth), self.n_depth > depth)
         # hyperparameter
         self.p_somatic = p_somatic
 
@@ -75,8 +75,8 @@ class model:
         t_het_direction = np.ones([self.number_of_sites, len(self.af)])
         t_het_direction[:, 0:np.int(np.round(np.true_divide(len(self.af),2)))] = -1
         for i, f in enumerate(self.af):
-            n_af_w[:, i] = self.rv_normal_af.cdf(f ) - self.rv_normal_af.cdf(f - 0.005)
-            t_af_w[:, i] = self.rv_tumor_af.cdf(f ) - self.rv_tumor_af.cdf(f - 0.005)
+            n_af_w[:, i] = beta._cdf(f,self.n_alt_count+1,self.n_ref_count+1) - beta._cdf(f - 0.005,self.n_alt_count+1,self.n_ref_count+1)
+            t_af_w[:, i] = beta._cdf(f,self.t_alt_count+1,self.t_ref_count+1) - beta._cdf(f - 0.005,self.t_alt_count+1,self.t_ref_count+1)
             # ac given somatic
             t_af = np.multiply(f, self.n_depth)
             n_ac_given_tin = np.multiply(t_af[:, np.newaxis], self.CN_ratio)
@@ -102,7 +102,7 @@ class model:
                              self.n_depth[:] - n_het_ac_given_tin[:, TiN_idx] + 1) ,
                     t_af_w[:, i])
 
-        self.p_artifact = self.rv_tumor_af.cdf(self.normal_f+.01) - self.rv_tumor_af.cdf(self.normal_f)
+        self.p_artifact = beta._cdf(self.normal_f+.01,self.t_alt_count+1,self.t_ref_count+1) - beta._cdf(self.normal_f,self.t_alt_count+1,self.t_ref_count+1)
         self.p_TiN_given_G = np.multiply(1 - self.p_artifact[:, np.newaxis], self.p_TiN_given_het) + np.multiply(
             self.p_artifact[:, np.newaxis], 1 - self.p_TiN_given_het)
     def expectation_of_z_given_TiN(self):

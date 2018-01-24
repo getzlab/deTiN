@@ -13,7 +13,7 @@ import deTiN_aSCNA_based_estimate as dascna
 class input:
     """class which holds the required detin somatic data prior to model"""
 
-    def __init__(self, args):
+    def __init__(self, args, ascna_probe_number_filter = 200,ascna_SNP_number_filter = 20,coverage_threshold = 15, SSNV_af_threshold = 0.15,aSCNA_variance_threshold=0.025 ):
 
         # related to inputs from command line
         self.call_stats_file = args.mutation_data_path
@@ -49,6 +49,32 @@ class input:
             self.aSCNA_thresh = float(args.aSCNA_threshold)
         else:
             self.aSCNA_thresh = args.aSCNA_threshold
+
+        try:
+            self.ascna_probe_number_filter = float(args.ascna_probe_number_filter)
+        except AttributeError:
+            self.ascna_probe_number_filter = ascna_probe_number_filter
+
+        try:
+            self.ascna_SNP_number_filter = float(args.ascna_SNP_number_filter)
+        except AttributeError:
+            self.ascna_SNP_number_filter = ascna_SNP_number_filter
+
+        try:
+            self.coverage_threshold = float(args.coverage_threshold)
+        except AttributeError:
+            self.coverage_threshold = coverage_threshold
+
+        try:
+            self.SSNV_af_threshold = float(args.SSNV_af_threshold)
+        except AttributeError:
+            self.SSNV_af_threshold = SSNV_af_threshold
+
+        try:
+            self.aSCNA_variance_threshold = float(args.aSCNA_variance_threshold)
+        except AttributeError:
+            self.aSCNA_variance_threshold = aSCNA_variance_threshold
+
         # related to inputs from class functions
         self.call_stats_table = []
         self.seg_table = []
@@ -162,7 +188,7 @@ class input:
                 self.indel_file = 'None'
                 self.indel_type = 'None'
         self.read_het_file()
-        self.seg_table = du.filter_segments_based_on_size_f_and_tau(self.seg_table,self.aSCNA_thresh)
+        self.seg_table = du.filter_segments_based_on_size_f_and_tau(self.seg_table,self.aSCNA_thresh,self.ascna_probe_number_filter)
         self.annotate_het_table()
         self.het_table = du.remove_sites_near_centromere_and_telomeres(self.het_table)
 
@@ -369,6 +395,18 @@ def main():
     parser.add_argument('--weighted_classification',
                         help='integrate variant classification over all values of TiN'
                         , required=False, default=False)
+    parser.add_argument('--ascna_probe_number_filter',help='number of probes to require for an aSCNA to be considered'
+                                                           ,required = False,default = 200)
+    parser.add_argument('--ascna_SNP_number_filter', help='number of probes to require for an aSCNA to be considered'
+                        , required=False, default=20)
+    parser.add_argument('--coverage_threshold',help='number of reads required to use a site for TiN estimation',required=False,
+                        default=15)
+    parser.add_argument('--SSNV_af_threshold', help='fraction of alternate alleles required for site to be used '
+                                                    'for SSNV TiN estimation',
+                        required=False,
+                        default=.15)
+    parser.add_argument('--aSCNA_variance_threshold',help='variance of segment allele shift tolerated before removing segment '
+                                                          'as artifact',required=False,default=0.025)
 
     args = parser.parse_args()
     di = input(args)
@@ -379,13 +417,13 @@ def main():
     di.candidates = du.select_candidate_mutations(di.call_stats_table,di.exac_db_file)
 
     # generate SSNV based model using candidate sites
-    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution)
+    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution,di.SSNV_af_threshold,di.coverage_threshold)
     ssnv_based_model.perform_inference()
 
     # identify aSCNAs and filter hets
     if len(di.seg_table)>0:
         di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
-        di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh)
+        di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh,di.ascna_SNP_number_filter,di.aSCNA_variance_threshold)
         # generate aSCNA based model
         ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets,di.resolution)
         ascna_based_model.perform_inference()

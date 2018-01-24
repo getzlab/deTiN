@@ -8,7 +8,6 @@ import random
 import pandas as pd
 import matplotlib
 import pickle
-
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
@@ -73,20 +72,20 @@ def remove_sites_near_centromere_and_telomeres(het_table):
     return het_table
 
 
-def filter_hets_based_on_coverage(het_table):
-    het_table = het_table[np.logical_and(het_table['READ_DEPTH_N'] > 10, het_table['READ_DEPTH_T'] > 10)]
+def filter_hets_based_on_coverage(het_table, depth = 15):
+    het_table = het_table[np.logical_and(het_table['READ_DEPTH_N'] > depth, het_table['READ_DEPTH_T'] > depth)]
     het_table.reset_index(inplace=True, drop=True)
     return het_table
 
 
-def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh):
+def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh, n_probes = 200):
     seg_table = seg_table[np.logical_and.reduce(np.array([np.array(seg_table['f']) < 0.5 - aSCNA_thresh,
-                                                          seg_table['n_probes'] > 200, seg_table['tau'] > 0]))]
+                                                          seg_table['n_probes'] > n_probes, seg_table['tau'] > 0]))]
     seg_table.reset_index(inplace=True, drop=True)
     return seg_table
 
 
-def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
+def identify_aSCNAs(seg_table, het_table, aSCNA_thresh = 0.1, n_snps = 20, var_thresh = 0.025):
     # identify aSCNAs based on minor allele fraction of segments
     mu_af_n = np.mean(het_table['AF_N'])
     f_detin = np.zeros([len(seg_table), 1])
@@ -94,7 +93,7 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
     n_snps_above_mu = np.zeros([len(seg_table), 1])
     n_snps_below_mu = np.zeros([len(seg_table), 1])
     fishers_p_convergent_seg = np.ones([len(seg_table), 1])
-
+    thresh_snps = np.round(np.true_divide(n_snps,2))
     for seg_id, seg in seg_table.iterrows():
         seg_hets = het_table[het_table['seg_id'] == seg_id]
         f_detin[seg_id] = mu_af_n - np.mean(np.abs(seg_hets['AF_T'] - mu_af_n))
@@ -126,10 +125,10 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh):
         print 'identified convergent aSCNA in normal on chromosomes:' + str(np.unique(seg_table['Chromosome'][ix] + 1))
     aSCNAs = seg_table[
         np.logical_and.reduce(np.array([np.array(seg_table['fishers_p_convergent_seg'] * len(seg_table)) > 0.05,
-                                        seg_table['n_snps_above_mu'] > 10,
-                                        seg_table['n_snps_below_mu'] > 10,
+                                        seg_table['n_snps_above_mu'] > thresh_snps,
+                                        seg_table['n_snps_below_mu'] > thresh_snps,
                                         seg_table['f_detin'] <= 0.5 - aSCNA_thresh,
-                                        seg_table['f_variance'] < 0.025]))]
+                                        seg_table['f_variance'] < var_thresh]))]
     return aSCNAs
 
 

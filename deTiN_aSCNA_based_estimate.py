@@ -16,7 +16,7 @@ class model:
        only usable when tumors have sufficient allele imbalance (>200 probes and >10 SNPs under loh).
         TiN estimate : model.TiN"""
 
-    def __init__(self, aSCNA_segs, aSCNA_hets, resolution):
+    def __init__(self, aSCNA_segs, aSCNA_hets, resolution = 101):
 
         # input data
         self.segs = aSCNA_segs
