@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.stats import beta
 from scipy.stats import norm
@@ -6,6 +7,7 @@ from scipy.cluster.vq import kmeans
 from scipy.stats import mode
 from itertools import combinations
 import pandas as pd
+
 
 np.seterr(all='ignore')
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -46,22 +48,24 @@ class model:
         self.bic = np.zeros([3, 1])
 
     def calculate_TiN_likelihood(self):
-        t_af_w = np.zeros([len(self.hets), len(self.af)])
-        rv_tumor_af = beta(self.hets['ALT_COUNT_T'] + 1, self.hets['REF_COUNT_T'] + 1)
-        rv_normal_af = beta(self.hets['ALT_COUNT_N'] + 1, self.hets['REF_COUNT_N'] + 1)
-
+        self.t_alt_count = self.hets.as_matrix(['ALT_COUNT_T'])
+        self.t_ref_count = self.hets.as_matrix(['REF_COUNT_T'])
+        self.afexp = np.repeat(np.expand_dims(self.af, 1), len(self.hets), axis=1).T
+        t_af_w = beta._cdf(self.afexp, self.t_alt_count + 1, self.t_ref_count + 1) - beta._cdf(self.afexp-0.005, self.t_alt_count + 1, self.t_ref_count + 1)
+        f_t_af = self.mu_af_n - np.abs(self.mu_af_n - self.afexp)
+        psi_t_af = self.mu_af_n - f_t_af
+        psi_t_af = np.multiply(psi_t_af, np.expand_dims(self.hets['d'], 1))
+        self.n_alt_count = np.squeeze(self.hets.as_matrix(['ALT_COUNT_N']))
+        self.n_ref_count = np.squeeze(self.hets.as_matrix(['REF_COUNT_N']))
+        self.p_TiN = np.zeros([len(self.hets), self.resolution])
         for i, f in enumerate(self.af):
-            t_af_w[:, i] = rv_tumor_af.cdf(f) - rv_tumor_af.cdf(f - 0.005)
-            f_t_af = self.mu_af_n - np.abs((self.mu_af_n - f))
-            psi_t_af = self.mu_af_n - f_t_af
-            psi_t_af = np.multiply(psi_t_af, self.hets['d'])
-            exp_f = self.mu_af_n + np.multiply(psi_t_af[:, np.newaxis], self.CN_ratio)
+            exp_f = self.mu_af_n + np.multiply(np.expand_dims(psi_t_af[:, i], 1), self.CN_ratio)
             exp_f[exp_f < 0] = 0
-            for TiN_idx, TiN in enumerate(self.TiN_range):
-                self.p_TiN[:, TiN_idx] += np.multiply(rv_normal_af.pdf(exp_f[:, TiN_idx]) * 0.01, t_af_w[:, i])
-
+            self.p_TiN += np.multiply(beta._pdf(exp_f, np.expand_dims(self.n_alt_count + 1, 1),
+                                                np.expand_dims(self.n_ref_count + 1, 1)) * 0.01,
+                                      np.expand_dims(t_af_w[:, i], 1))
         seg_var = np.zeros([len(self.segs), 1])
-        TiN_MAP = np.zeros([len(self.segs), 1],dtype=int)
+        TiN_MAP = np.zeros([len(self.segs), 1], dtype=int)
         TiN_likelihood = np.zeros([len(self.segs), self.resolution])
         TiN_post = np.zeros([len(self.segs), self.resolution])
         counter = 0
@@ -81,7 +85,7 @@ class model:
             counter += 1
         self.TiN_post_seg = TiN_post
         self.segs.loc[:, ('TiN_var')] = seg_var
-        self.segs.loc[:, ('TiN_MAP')] = self.TiN_range[TiN_MAP]*100
+        self.segs.loc[:, ('TiN_MAP')] = self.TiN_range[TiN_MAP] * 100
         self.TiN_likelihood_matrix = TiN_likelihood
 
     def cluster_segments(self):
