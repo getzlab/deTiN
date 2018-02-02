@@ -1,5 +1,7 @@
 import numpy as np
+import pandas as pd
 from scipy.stats import beta
+import deTiN_utilities as du
 
 np.seterr(all='ignore')
 
@@ -12,7 +14,7 @@ class model:
      TiN estimate : model.TiN
      Somatic classification of SSNVs : model.E_z (E_z > 0.5 -> somatic)"""
 
-    def __init__(self, candidate_sites, p_somatic, resolution=101, f_thresh=0.15, depth=15):
+    def __init__(self, candidate_sites, p_somatic, resolution=101, f_thresh=0.15, depth=15, hot_spots_file = 'NA'):
         # variables follow notation:
         # ac = allele count n = normal t = tumor
 
@@ -36,7 +38,21 @@ class model:
         self.candidate_sites = np.logical_and(np.logical_and(self.tumor_f > f_thresh, self.t_depth > depth),
                                               self.n_depth > depth)
         # hyperparameter
-        self.p_somatic = p_somatic
+        self.p_somatic = np.zeros([self.number_of_sites,1]) + p_somatic
+        if hot_spots_file != 'NA':
+            hot_spots = pd.read_csv(hot_spots_file,sep='\t',low_memory=False,index_col=False)
+            if type(hot_spots['Chromosome'][0]) == str:
+                hot_spots['contig'] = du.chr2num(np.array(hot_spots['Chromosome']))
+            else:
+                hot_spots['contig'] = np.array(hot_spots['Chromosome']) - 1
+            hot_spots = hot_spots[np.isfinite(hot_spots['contig'])]
+            hot_spots['genomic_coord_x'] = du.hg19_to_linear_positions(
+                np.array(hot_spots['contig']), np.array(hot_spots['Position']))
+            for index,hot_spot in hot_spots.iterrows():
+                if np.size(np.where(self.genomic_coord_x==hot_spot['genomic_coord_x'])) > 0:
+                    print 'Using user provided probabilities for cancer hot spots:'
+                    print hot_spot['Chromosome'] + ' ' + hot_spot['Position']
+                    self.p_somatic[np.where(self.genomic_coord_x==hot_spot['genomic_coord_x'])] = hot_spot['Probability']
 
         # parameter
         self.TiN = 0
@@ -105,15 +121,14 @@ class model:
 
     def expectation_of_z_given_TiN(self):
         # E step
-        numerator = self.p_somatic * (self.p_TiN_given_S[:, self.TiN])
-        denominator = numerator + np.array([1 - self.p_somatic] * np.nan_to_num(self.p_TiN_given_G[:, self.TiN]))
+        numerator = self.p_somatic * np.expand_dims(self.p_TiN_given_S[:, self.TiN],1)
+        denominator = numerator + (1 - self.p_somatic) * np.expand_dims(np.nan_to_num(self.p_TiN_given_G[:, self.TiN]),1)
         self.E_z = np.nan_to_num(np.true_divide(numerator, denominator))
-
     def maximize_TiN_likelihood(self):
         # M step
-        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[self.candidate_sites, np.newaxis],
+        self.TiN_likelihood = np.nansum(np.multiply(self.E_z[self.candidate_sites],
                                                     np.ma.log(self.p_TiN_given_S[self.candidate_sites, :])), axis=0) + \
-                              np.nansum(np.multiply(1 - self.E_z[self.candidate_sites, np.newaxis],
+                              np.nansum(np.multiply(1 - self.E_z[self.candidate_sites],
                                                     np.ma.log(self.p_TiN_given_G[self.candidate_sites, :])), axis=0)
         self.TiN = np.argmax(self.TiN_likelihood)
 

@@ -75,6 +75,12 @@ class input:
         except AttributeError:
             self.aSCNA_variance_threshold = aSCNA_variance_threshold
 
+        try:
+            self.CancerHotSpotsBED = args.cancer_hot_spots
+        except AttributeError:
+            self.aSCNA_variance_threshold = 'NA'
+
+
         # related to inputs from class functions
         self.call_stats_table = []
         self.seg_table = []
@@ -308,9 +314,9 @@ class output:
                     denominator = denominator + denom_iter
 
         else:
-            numerator = self.ssnv_based_model.p_somatic * self.ssnv_based_model.p_TiN_given_S[:, self.TiN_int]
+            numerator = self.ssnv_based_model.p_somatic * np.expand_dims(self.ssnv_based_model.p_TiN_given_S[:, self.TiN_int],1)
             denominator = numerator + np.array(
-                [1 - self.ssnv_based_model.p_somatic] * np.nan_to_num(self.ssnv_based_model.p_TiN_given_G[:, self.TiN_int]))
+                [1 - self.ssnv_based_model.p_somatic] * np.expand_dims(np.nan_to_num(self.ssnv_based_model.p_TiN_given_G[:, self.TiN_int]),1))
         self.SSNVs.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
         # expected normal allele fraction given TiN and tau
         af_n_given_TiN = np.multiply(self.ssnv_based_model.tumor_f, self.ssnv_based_model.CN_ratio[:, self.TiN_int])
@@ -329,10 +335,10 @@ class output:
             indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior,self.input.resolution)
             indel_model.generate_conditional_ps()
             self.indels = self.input.indel_table
-            numerator = indel_model.p_somatic * indel_model.p_TiN_given_S[:, self.TiN_int]
+            numerator = indel_model.p_somatic * np.expand_dims(indel_model.p_TiN_given_S[:, self.TiN_int],1)
             denominator = numerator + np.array(
-                [1 - indel_model.p_somatic] * np.nan_to_num(
-                    indel_model.p_TiN_given_G[:, self.TiN_int]))
+                [1 - indel_model.p_somatic] * np.expand_dims(np.nan_to_num(
+                    indel_model.p_TiN_given_G[:, self.TiN_int]),1))
             af_n_given_TiN = np.multiply(indel_model.tumor_f, indel_model.CN_ratio[:, self.TiN_int])
             self.indels.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
             self.indels.loc[:, 'p_outlier'] = indel_model.rv_normal_af.cdf(af_n_given_TiN)
@@ -407,7 +413,9 @@ def main():
                         default=.15)
     parser.add_argument('--aSCNA_variance_threshold',help='variance of segment allele shift tolerated before removing segment '
                                                           'as artifact',required=False,default=0.025)
-
+    parser.add_argument('--cancer_hot_spots', help='Optional BED file of cancer hot spot mutations which the user has a stronger prior on being somatic e.g. BRAF v600E mutations.'
+                                                   'The format of this file is Chromosome\tPosition\tProbability. Note this will override the mutation prior at these locations'
+                        , required=False, default= 'NA')
     args = parser.parse_args()
     di = input(args)
     di.read_and_preprocess_data()
@@ -417,7 +425,7 @@ def main():
     di.candidates = du.select_candidate_mutations(di.call_stats_table,di.exac_db_file)
 
     # generate SSNV based model using candidate sites
-    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution,di.SSNV_af_threshold,di.coverage_threshold)
+    ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution,di.SSNV_af_threshold,di.coverage_threshold,di.CancerHotSpotsBED)
     ssnv_based_model.perform_inference()
 
     # identify aSCNAs and filter hets
