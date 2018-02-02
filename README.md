@@ -59,7 +59,7 @@ Variance tolerated in allele shift of a segment before removal. This filter help
 --cancer_hot_spots
 Optional BED file of cancer hot spot mutations which the user has a stronger prior on being somatic e.g. BRAF v600E mutations.
 
-#Motivation
+## Motivation
 Genomic characterization is vital to the understanding and treatment of cancer.  Detection of somatic mutations is a critical component of this process. A key step in sensitive and specific somatic mutation detection is comparison of the tumor sample to a matched germline control. Sensitivity to detect somatic variants is greatly reduced when the matched normal sample is contaminated with tumor cells. To overcome this limitation, we developed deTiN, a method that estimates tumor-in-normal contamination (TiN), and improves detection sensitivity when using a contaminated normal. 
 
 ## Installation
