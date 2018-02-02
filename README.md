@@ -29,11 +29,21 @@ Parameters:
 
 –-output_dir output directory
 
-–-mutation_prior fraction of rare germline sites to somatic sites. Default = 0.15
+Optional parameters:
 
-–-aSCNA_threshold minor allele fraction threshold for calling aSCNAs. Default = 0.1
-
-–-TiN_prior fraction of samples which user expects to be contaminated. This is used for model selection, set to 0.5 if unknown. Default = 0.5
+flag	Default value 	Notes
+	(exome standard coverage)	
+--TiN_prior	0.5	0.5 is a null prior. If users wish to require more evidence for TiN > 0 this can be lowered. 
+NA	0.5	This is the cut off to reclassify a somatic event. It is not recommended to change this value. 
+--mutation_prior	0.15	The ratio of sites expected to be mutated somatically to rare germline events (0.15 corresponds to ~2 mutations per megabase)
+--ascna_probe_number_filter	200	We require 200 probes based on empirical results using GATK4CNV that segments smaller than this tend to be enriched for artifacts. For WGS this parameter can be set to 0.
+--ascna_SNP_number_filter	20	We require 20 SNPs based on empirical results using GATK4CNV that segments smaller than this tend to be enriched for artifacts. 
+--coverage_threshold	15	Number of reads required to use a variant for estimation of TiN. We require 15x coverage since low coverage sites tend to be enriched for artifacts. (NOTE: all sites are considered for somatic recovery)
+--SSNV_af_threshold	0.15	Fraction of alternate allele required for site to be used in SSNV based estimation of TiN. We require 15% since low af sites tend to be enriched for artifacts. If users are using more deeply sequenced data this should be set to a lower value.
+		(NOTE: all sites are considered for somatic recovery)
+--aSCNA_threshold	0.1	Fraction of allele shift required to use a segment for TiN estimation. Lower this value for extremely well covered samples (e.g. 500x). 
+--aSCNA_variance_threshold	0.025	Variance tolerated in allele shift of a segment before removal. This filter helps to remove regions enriched for artifact sites such as centromeres/telomeres and low mapping regions. 
+--cancer_hot_spots	BED file	Optional BED file of cancer hot spot mutations which the user has a stronger prior on being somatic e.g. BRAF v600E mutations.
 
 ## Motivation
 
