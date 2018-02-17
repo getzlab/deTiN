@@ -118,6 +118,8 @@ class input:
         normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False, comment='#')
         tumor_het_table = du.fix_het_file_header(tumor_het_table)
         normal_het_table = du.fix_het_file_header(normal_het_table)
+
+
         if type(tumor_het_table['CONTIG'][0]) == str:
             tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
         else:
@@ -324,7 +326,7 @@ class output:
         self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN +0.01)
         if self.TiN_int == 0 :
             print 'Estimated 0 TiN no SSNVs will be recovered outputing deTiN statistics for each site'
-        if self.use_outlier_threshold:
+        elif self.use_outlier_threshold:
             # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
             self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN'] > self.threshold,
                                                    self.SSNVs['p_outlier'] >= 0.01)] = 'KEEP'
