@@ -433,10 +433,14 @@ def main():
     # identify aSCNAs and filter hets
     if len(di.seg_table)>0:
         di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
-        di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh,di.ascna_SNP_number_filter,di.aSCNA_variance_threshold)
-        # generate aSCNA based model
-        ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets,di.resolution)
-        ascna_based_model.perform_inference()
+        if len(di.aSCNA_hets) == 0:
+            ascna_based_model = dascna.model(di.seg_table, di.het_table, di.resolution)
+            ascna_based_model.TiN = np.nan
+        else:
+            di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets,di.aSCNA_thresh,di.ascna_SNP_number_filter,di.aSCNA_variance_threshold)
+            # generate aSCNA based model
+            ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets,di.resolution)
+            ascna_based_model.perform_inference()
     else:
         ascna_based_model = dascna.model(di.seg_table, di.het_table,di.resolution)
         ascna_based_model.TiN = np.nan
