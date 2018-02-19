@@ -84,6 +84,33 @@ def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh, n_probes = 
     seg_table.reset_index(inplace=True, drop=True)
     return seg_table
 
+def alternate_file_headers():
+
+    headers = {'alternate_headers_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
+               'alternate_headers_start_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
+               'alternate_headers_end_position' : ['End', 'End_bp', 'end'],
+               'alternate_headers_chromosome' : ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME','Chromosome'],
+               'alternate_headers_f' : ['f_acs', 'MAF_Post_Mode'],
+               'alternate_headers_tau' : ['CN', 'Segment_Mean_Post_Mode'],
+               'alternate_headers_alt_count' : ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count'],
+               'alternate_headers_ref_count' : ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count'] }
+    return headers
+
+def read_file_header(text_file):
+
+    headers = alternate_file_headers()
+    with open(text_file, 'rt') as f:
+        for header_lines, line in enumerate(f):
+            line = line.strip()
+            if not line[0] == '#':
+                break
+    file_head = line.split('\t')
+    try :
+        headers['alternate_headers_chromosome'].index(file_head[0])
+    except ValueError:
+        sys.exit('The first column of all input files should be chromosome: could not find any of the chromosome headers in the first column of '+
+                 text_file)
+    return file_head
 
 def identify_aSCNAs(seg_table, het_table, aSCNA_thresh = 0.1, n_snps = 20, var_thresh = 0.025):
     # identify aSCNAs based on minor allele fraction of segments
@@ -192,9 +219,13 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     clr = ['b', 'g', 'r']
-    for i in range(K[kIdx]):
-        ind = (ascna_based_model.cluster_assignment == i)
-        ax.scatter(X[ind], Y[ind] + 1, s=30, c=clr[i], label='Cluster %d' % i)
+    if len(X) > 1:
+        for i in range(K[kIdx]):
+            ind = (ascna_based_model.cluster_assignment == i)
+            ax.scatter(X[ind], Y[ind] + 1, s=30, c=clr[i], label='Cluster %d' % i)
+    else:
+        ax.scatter(X,Y+1,s=30,c='b',label='Cluster 1')
+
     plt.xlabel('MAP tumor in normal estimate (%)')
     plt.ylabel('Chromosome')
     plt.title('Cluster by chromosome and TiN')
@@ -306,12 +337,8 @@ def hg19_to_linear_positions(chromosome, position, **keyword_parameters):
 
 def fix_het_file_header(het_file):
     # allowing flexibility in het file headers to accommodate changing versions of GATK4 and other CN tools
-    # in order to add support for your het file headers please modify the alternate header lists below
-
-    alternate_headers_position = ['POS', 'position', 'pos', 'Start_position']
-    alternate_headers_chromosome = ['CHR', 'chrom', 'Chromosome', 'chr', 'Chrom']
-    alternate_headers_alt_count = ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count']
-    alternate_headers_ref_count = ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count']
+    # in order to add support for your het file headers please modify the alternate header lists above
+    headers = alternate_file_headers()
 
     required_headers = ['CONTIG', 'POSITION', 'ALT_COUNT', 'REF_COUNT']
 
@@ -321,46 +348,46 @@ def fix_het_file_header(het_file):
         missing_idx = np.where(~np.isfinite((is_member(required_headers, het_file.columns))))
         for i in missing_idx[0]:
             if required_headers[i] == 'POSITION':
-                if np.sum(np.isfinite(is_member(alternate_headers_position, het_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_position, het_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_position'], het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_position'], het_file.columns))) > 1:
                     sys.exit('missing required header POSITION and could not replace with POS,position, or pos!')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_position, het_file.columns)))
-                    het_file.rename(columns={alternate_headers_position[idx_replace[0][0]]: 'POSITION'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_position[
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_position'], het_file.columns)))
+                    het_file.rename(columns={headers['alternate_headers_position'][idx_replace[0][0]]: 'POSITION'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_position'][
                         idx_replace[0][0]] + ' to POSITION'
 
             if required_headers[i] == 'CONTIG':
-                if np.sum(np.isfinite(is_member(alternate_headers_chromosome, het_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_chromosome, het_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_chromosome'], het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_chromosome'], het_file.columns))) > 1:
                     sys.exit(
                         'missing required header CONTIG and could not replace with any one of CHR, chrom, Chromosome, chr, Chrom!')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_chromosome, het_file.columns)))
-                    het_file.rename(columns={alternate_headers_chromosome[idx_replace[0][0]]: 'CONTIG'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_chromosome[
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_chromosome'], het_file.columns)))
+                    het_file.rename(columns={headers['alternate_headers_chromosome'][idx_replace[0][0]]: 'CONTIG'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_chromosome'][
                         idx_replace[0][0]] + ' to CONTIG'
 
             if required_headers[i] == 'ALT_COUNT':
-                if np.sum(np.isfinite(is_member(alternate_headers_alt_count, het_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_alt_count, het_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_alt_count'], het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_alt_count'], het_file.columns))) > 1:
                     sys.exit(
                         'missing required header ALT_COUNT and could not replace with any one of t_alt_count, n_alt_count, alt_count')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_alt_count, het_file.columns)))
-                    het_file.rename(columns={alternate_headers_alt_count[idx_replace[0][0]]: 'ALT_COUNT'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_alt_count[
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_alt_count'], het_file.columns)))
+                    het_file.rename(columns={headers['alternate_headers_alt_count'][idx_replace[0][0]]: 'ALT_COUNT'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_alt_count'][
                         idx_replace[0][0]] + ' to ALT_COUNT'
 
             if required_headers[i] == 'REF_COUNT':
-                if np.sum(np.isfinite(is_member(alternate_headers_ref_count, het_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_ref_count, het_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_ref_count'], het_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_ref_count'], het_file.columns))) > 1:
                     sys.exit(
                         'missing required header ALT_COUNT and could not replace with any one of t_ref_count, n_ref_count, ref_count')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_ref_count, het_file.columns)))
-                    het_file.rename(columns={alternate_headers_ref_count[idx_replace[0][0]]: 'REF_COUNT'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_ref_count[
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_ref_count'], het_file.columns)))
+                    het_file.rename(columns={headers['alternate_headers_ref_count'][idx_replace[0][0]]: 'REF_COUNT'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_ref_count'][
                         idx_replace[0][0]] + ' to REF_COUNT'
 
         return het_file
@@ -368,13 +395,9 @@ def fix_het_file_header(het_file):
 
 def fix_seg_file_header(seg_file):
     # allowing flexibility in seg file headers to accommodate changing versions of GATK4 and other CN tools
-    # in order to add support for your seg file headers please modify the alternate header lists below
+    # in order to add support for your seg file headers please modify the alternate header lists above
 
-    alternate_headers_start_position = ['Start', 'Start_bp', 'start']
-    alternate_headers_end_position = ['End', 'End_bp', 'end']
-    alternate_headers_chromosome = ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME']
-    alternate_headers_f = ['f_acs', 'MAF_Post_Mode']
-    alternate_headers_tau = ['CN', 'Segment_Mean_Post_Mode']
+    headers = alternate_file_headers()
 
     required_headers = ['Chromosome', 'Start.bp', 'End.bp', 'f', 'tau']
 
@@ -384,57 +407,57 @@ def fix_seg_file_header(seg_file):
         missing_idx = np.where(~np.isfinite((is_member(required_headers, seg_file.columns))))
         for i in missing_idx[0]:
             if required_headers[i] == 'Start.bp':
-                if np.sum(np.isfinite(is_member(alternate_headers_start_position, seg_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_start_position, seg_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_start_position'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_start_position'], seg_file.columns))) > 1:
                     sys.exit('missing required header Start.bp and could not replace with Start or Start_bp')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_start_position, seg_file.columns)))
-                    seg_file.rename(columns={alternate_headers_start_position[idx_replace[0][0]]: 'Start.bp'},
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_start_position'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_start_position'][idx_replace[0][0]]: 'Start.bp'},
                                     inplace=True)
-                    print 'changing header of seg file from ' + alternate_headers_start_position[
+                    print 'changing header of seg file from ' + headers['alternate_headers_start_position'][
                         idx_replace[0][0]] + ' to Start.bp'
 
             if required_headers[i] == 'End.bp':
-                if np.sum(np.isfinite(is_member(alternate_headers_end_position, seg_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_end_position, seg_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_end_position'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_end_position'], seg_file.columns))) > 1:
                     sys.exit('missing required header End.bp and could not replace with End or End_bp')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_end_position, seg_file.columns)))
-                    seg_file.rename(columns={alternate_headers_end_position[idx_replace[0][0]]: 'End.bp'}, inplace=True)
-                    print 'changing header of seg file from ' + alternate_headers_end_position[
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_end_position'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_end_position'][idx_replace[0][0]]: 'End.bp'}, inplace=True)
+                    print 'changing header of seg file from ' + headers['alternate_headers_end_position'][
                         idx_replace[0][0]] + ' to End.bp'
 
             if required_headers[i] == 'Chromosome':
-                if np.sum(np.isfinite(is_member(alternate_headers_chromosome, seg_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_chromosome, seg_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_chromosome'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_chromosome'], seg_file.columns))) > 1:
                     sys.exit(
                         'missing required header Chromosome and could not replace with any other header')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_chromosome, seg_file.columns)))
-                    seg_file.rename(columns={alternate_headers_chromosome[idx_replace[0][0]]: 'Chromosome'},
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_chromosome'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_chromosome'][idx_replace[0][0]]: 'Chromosome'},
                                     inplace=True)
-                    print 'changing header of seg file from ' + alternate_headers_chromosome[
+                    print 'changing header of seg file from ' + headers['alternate_headers_chromosome'][
                         idx_replace[0][0]] + ' to Chromosome'
 
             if required_headers[i] == 'f':
-                if np.sum(np.isfinite(is_member(alternate_headers_f, seg_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_f, seg_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_f'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_f'], seg_file.columns))) > 1:
                     sys.exit(
                         'missing required header f and could not replace with any one of f_acs')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_f, seg_file.columns)))
-                    seg_file.rename(columns={alternate_headers_f[idx_replace[0][0]]: 'f'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_f[idx_replace[0][0]] + ' to f'
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_f'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_f'][idx_replace[0][0]]: 'f'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_f'][idx_replace[0][0]] + ' to f'
 
             if required_headers[i] == 'tau':
-                if np.sum(np.isfinite(is_member(alternate_headers_tau, seg_file.columns))) == 0 or np.sum(
-                        np.isfinite(is_member(alternate_headers_tau, seg_file.columns))) > 1:
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_tau'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_tau'], seg_file.columns))) > 1:
                     sys.exit(
                         'missing required header tau and could not replace with any one of CN')
                 else:
-                    idx_replace = np.where(np.isfinite(is_member(alternate_headers_tau, seg_file.columns)))
-                    seg_file.rename(columns={alternate_headers_tau[idx_replace[0][0]]: 'tau'}, inplace=True)
-                    print 'changing header of het file from ' + alternate_headers_tau[idx_replace[0][0]] + ' to tau'
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_tau'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_tau'][idx_replace[0][0]]: 'tau'}, inplace=True)
+                    print 'changing header of het file from ' + headers['alternate_headers_tau'][idx_replace[0][0]] + ' to tau'
 
         return seg_file
 
