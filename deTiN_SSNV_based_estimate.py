@@ -145,7 +145,7 @@ class model:
             self.expectation_of_z_given_TiN()
             self.maximize_TiN_likelihood()
             print 'TiN inference after ' + str(iteration) + ' iterations = ' + str(self.TiN_range[self.TiN])
-        print 'SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN])
+        print 'SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN]) + ' based on ' + str(np.sum(self.candidate_sites)) + ' sites'
         self.TiN = self.TiN_range[self.TiN]
 
         posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
