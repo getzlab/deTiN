@@ -114,21 +114,16 @@ class input:
         self.call_stats_table.reset_index(inplace=True,drop=True)
 
     def read_het_file(self):
-        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False, comment='#')
-        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False, comment='#')
+        t_het_header = du.read_file_header(self.tumor_het_file)
+        n_het_header = du.read_file_header(self.normal_het_file)
+        cols_t_type = {t_het_header[0]:str}
+        cols_n_type = {n_het_header[0]: str}
+        tumor_het_table = pd.read_csv(self.tumor_het_file, '\t', index_col=False, low_memory=False, comment='#',dtype=cols_t_type)
+        normal_het_table = pd.read_csv(self.normal_het_file, '\t', index_col=False, low_memory=False, comment='#',dtype=cols_n_type)
         tumor_het_table = du.fix_het_file_header(tumor_het_table)
         normal_het_table = du.fix_het_file_header(normal_het_table)
-
-
-        if type(tumor_het_table['CONTIG'][0]) == str:
-            tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
-        else:
-            tumor_het_table['Chromosome'] = np.array(tumor_het_table['CONTIG'])
-
-        if type(normal_het_table['CONTIG'][0]) == str:
-            normal_het_table['Chromosome'] = du.chr2num(np.array(normal_het_table['CONTIG']))
-        else:
-            normal_het_table['Chromosome'] = np.array(normal_het_table['CONTIG'])
+        tumor_het_table['Chromosome'] = du.chr2num(np.array(tumor_het_table['CONTIG']))
+        normal_het_table['Chromosome'] = du.chr2num(np.array(normal_het_table['CONTIG']))
         tumor_het_table = tumor_het_table[np.isfinite(tumor_het_table['Chromosome'])]
         tumor_het_table['genomic_coord_x'] = du.hg19_to_linear_positions(np.array(tumor_het_table['Chromosome']),
                                                                          np.array(tumor_het_table['POSITION']))
@@ -142,12 +137,13 @@ class input:
         self.het_table = pd.merge(normal_het_table, tumor_het_table, on='genomic_coord_x', suffixes=('_N', '_T'))
 
     def read_seg_file(self):
-        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False, comment='#')
+        seg_header = du.read_file_header(self.seg_file)
+        cols_seg_type = {seg_header[0]:str}
+        self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False, comment='#',dtype=cols_seg_type)
         self.seg_table = du.fix_seg_file_header(self.seg_table)
-        if not du.is_number(self.seg_table['Chromosome'][0]):
-            self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
-        else:
-            self.seg_table['Chromosome'] = self.seg_table['Chromosome'] - 1
+
+        self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
+
         self.seg_table['genomic_coord_start'] = du.hg19_to_linear_positions(np.array(self.seg_table['Chromosome']),
                                                                             np.array(self.seg_table['Start.bp']))
         self.seg_table['genomic_coord_end'] = du.hg19_to_linear_positions(np.array(self.seg_table['Chromosome']),
