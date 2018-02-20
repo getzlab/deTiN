@@ -116,8 +116,14 @@ class model:
                            p,
                            np.log(
                                N))) + delta_bic
-            dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
-            dist_btwn_c2 = np.abs(np.diff(centroids[1]))
+            if len(centroids[2])>1:
+                dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
+            else:
+                dist_btwn_c3 = 0
+            if len(centroids[1]) > 1:
+                dist_btwn_c2 = np.abs(np.diff(centroids[1]))
+            else:
+                dist_btwn_c2 = 0
             if dist_btwn_c3 < 2 * np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 > 2 * np.nanmax(self.cl_var[1, :]):
                 solution_idx = np.nanargmin(self.bic[0:1])
                 self.cluster_assignment = cluster_assignment[solution_idx]
@@ -136,7 +142,7 @@ class model:
     def perform_inference(self):
         # MAP estimation of TiN using copy number data
         print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(
-            np.unique(self.segs['Chromosome']) + 1)
+            np.unique(self.segs['Chromosome']) )
         # calculate likelihood function for TiN in each segment
         self.calculate_TiN_likelihood()
         # perform k-means clustering on TiN segment data
