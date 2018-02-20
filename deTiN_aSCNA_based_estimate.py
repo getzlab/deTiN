@@ -116,7 +116,7 @@ class model:
                            p,
                            np.log(
                                N))) + delta_bic
-            if len(centroids[2])>1:
+            if len(centroids[2])>2:
                 dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
             else:
                 dist_btwn_c3 = 0
