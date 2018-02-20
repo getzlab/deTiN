@@ -279,11 +279,11 @@ def plot_SSNVs(do):
     kept_def = ax.plot(do.ssnv_based_model.tumor_f[nod_kept], do.ssnv_based_model.normal_f[nod_kept],
                        'b.', lw=0.1)
     d_kept = np.logical_and(do.SSNVs['judgement'] == 'KEEP', ~do.SSNVs.isnull()['failure_reasons']).values
-    yerr_low = do.ssnv_based_model.normal_f.values[d_kept] - cis[0][d_kept]
+    yerr_low = do.ssnv_based_model.normal_f[d_kept] - cis[0][d_kept]
     yerr_low[yerr_low<0] = 0
-    detin_kept = ax.errorbar(do.ssnv_based_model.tumor_f.values[d_kept], do.ssnv_based_model.normal_f.values[d_kept],
+    detin_kept = ax.errorbar(do.ssnv_based_model.tumor_f[d_kept], do.ssnv_based_model.normal_f[d_kept],
                              yerr=[yerr_low,
-                                   cis[1][d_kept] - do.ssnv_based_model.normal_f.values[d_kept]], fmt='r.', capsize=2)
+                                   cis[1][d_kept] - do.ssnv_based_model.normal_f[d_kept]], fmt='r.', capsize=2)
 
     plt.xlabel('Tumor AF')
     plt.ylabel('Normal AF')
