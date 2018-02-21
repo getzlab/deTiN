@@ -465,19 +465,38 @@ def fix_seg_file_header(seg_file):
 def read_indel_vcf(vcf,seg_table,indel_type):
     # read strelka vcf
     # headerline should be in this format: #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
-    indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None,low_memory=False)
+    cols_type = {0: str}
+    indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None,low_memory=False,dtype=cols_type)
+
     if indel_type.lower() == 'strelka':
         indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO', 8: 'format', 6: 'filter', 9: 'normal', 10: 'tumor'},
                        inplace=True)
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('DP')
         alt_indel_ix = counts_format.index('TIR')
+        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'QSI_ref']))]
+        indel_table.reset_index(inplace=True, drop=True)
+
     elif indel_type.lower() == 'mutect2':
         # CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL
         indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 9: 'tumor', 10: 'normal'},
                            inplace=True)
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('AD')
+        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal']))]
+        indel_table.reset_index(inplace=True, drop=True)
+
+    elif indel_type.lower() == 'sanger':
+        # CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  NORMAL  TUMOUR
+        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 10: 'tumor', 9: 'normal'},
+                           inplace=True)
+        b1 = np.logical_or.reduce([indel_table['filter'] == 'F012', indel_table['filter'] == 'F012;F015'])
+        b2 = np.logical_or.reduce([indel_table['filter'] == 'PASS', indel_table['filter'] == 'F015'])
+        indel_table = indel_table[np.logical_or.reduce([b1, b2])]
+        indel_table.reset_index(inplace=True,drop=True)
+        format_string = indel_table['format'][0].split(':')
+        total_depth_idx = [format_string.index('PR'), format_string.index('NR')]
+        alt_count_idx = [format_string.index('PU'), format_string.index('NU')]
 
     # parsing format line and file to determine required alt and ref columns
     # we use "tier 1" read counts for varaints
@@ -506,6 +525,13 @@ def read_indel_vcf(vcf,seg_table,indel_type):
             t_alt_count[index] = int(spl_t[depth_ix].split(',')[1])
             t_ref_count[index] = int(spl_t[depth_ix].split(',')[0])
             t_depth[index] = t_alt_count[index] + t_ref_count[index]
+        if indel_type.lower() == 'sanger':
+            n_depth[index] = np.sum([int(spl_n[i]) for i in total_depth_idx])
+            n_alt_count[index] = np.sum([int(spl_n[i]) for i in alt_count_idx])
+            n_ref_count[index] = n_depth[index] - n_alt_count[index]
+            t_depth[index] = np.sum([int(spl_t[i]) for i in total_depth_idx])
+            t_alt_count[index] = np.sum([int(spl_t[i]) for i in alt_count_idx])
+            t_ref_count[index] = t_depth[index] - t_alt_count[index]
 
     indel_table['t_depth'] = t_depth
     indel_table['t_alt_count'] = t_alt_count
@@ -524,12 +550,6 @@ def read_indel_vcf(vcf,seg_table,indel_type):
     indel_table = indel_table[np.isfinite(indel_table['Chromosome'])]
     indel_table.reset_index(inplace=True, drop=True)
     indel_table['genomic_coord_x'] = hg19_to_linear_positions(indel_table['Chromosome'], indel_table['position'])
-    if indel_type.lower() == 'strelka':
-        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'],['PASS','QSI_ref']))]
-        indel_table.reset_index(inplace=True, drop=True)
-    if indel_type.lower() == 'mutect2':
-        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal']))]
-        indel_table.reset_index(inplace=True, drop=True)
     # annotate with acs data
     f_acs = np.zeros([len(indel_table), 1]) + 0.5
     tau = np.zeros([len(indel_table), 1]) + 2
