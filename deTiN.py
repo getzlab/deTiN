@@ -43,7 +43,10 @@ class input:
         self.output_path = args.output_dir
         self.output_name = args.output_name
         if type(args.use_outlier_removal) == str:
-            self.use_outlier_removal = bool(args.use_outlier_removal)
+            if args.use_outlier_removal.lower() == 'false':
+                self.use_outlier_removal = False
+            else:
+                self.use_outlier_removal = True
         else:
             self.use_outlier_removal = args.use_outlier_removal
         if type(args.aSCNA_threshold) == str:
