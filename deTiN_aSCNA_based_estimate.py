@@ -93,7 +93,7 @@ class model:
             K = range(1, 4)
             N = len(self.hets['seg_id'])
             self.segs.reset_index(inplace=True, drop=False)
-            tin_data = np.array(self.segs['TiN_MAP'])
+            tin_data = np.nanargmax(self.TiN_likelihood_matrix,axis=1).astype(float)
             km = [kmeans(tin_data, k, iter=1000) for k in K]
             centroids = [cent for (cent, var) in km]
             squared_distance_to_centroids = [np.power(np.subtract(tin_data[:, np.newaxis], cent), 2) for cent in

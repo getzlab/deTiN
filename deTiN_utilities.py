@@ -150,13 +150,16 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh = 0.1, n_snps = 20, var_t
         segs = (seg_table['fishers_p_convergent_seg'] * len(seg_table)) < 0.05
         ix = list(compress(xrange(len(segs)), segs))
         print 'identified convergent aSCNA in normal on chromosomes:' + str(np.unique(seg_table['Chromosome'][ix] + 1))
+        convergent_segs = seg_table[seg_table['fishers_p_convergent_seg'] * len(seg_table) <= 0.05]
+    else:
+        convergent_segs = None
     aSCNAs = seg_table[
         np.logical_and.reduce(np.array([np.array(seg_table['fishers_p_convergent_seg'] * len(seg_table)) > 0.05,
                                         seg_table['n_snps_above_mu'] > thresh_snps,
                                         seg_table['n_snps_below_mu'] > thresh_snps,
                                         seg_table['f_detin'] <= 0.5 - aSCNA_thresh,
                                         seg_table['f_variance'] < var_thresh]))]
-    return aSCNAs
+    return aSCNAs,convergent_segs
 
 
 def ensure_balanced_hets(seg_table, het_table):
