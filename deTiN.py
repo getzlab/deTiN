@@ -448,7 +448,7 @@ def main():
     if len(di.seg_table) > 0:
         di.aSCNA_hets = du.ensure_balanced_hets(di.seg_table, di.het_table)
         if len(di.aSCNA_hets) > 0:
-            di.aSCNA_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets, di.aSCNA_thresh, di.ascna_SNP_number_filter,
+            di.aSCNA_segs,di.convergent_segs = du.identify_aSCNAs(di.seg_table, di.aSCNA_hets, di.aSCNA_thresh, di.ascna_SNP_number_filter,
                                                di.aSCNA_variance_threshold)
             if len(di.aSCNA_segs) > 0:
                 ascna_based_model = dascna.model(di.aSCNA_segs, di.aSCNA_hets, di.resolution)

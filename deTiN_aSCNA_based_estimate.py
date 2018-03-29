@@ -21,8 +21,8 @@ class model:
     def __init__(self, aSCNA_segs, aSCNA_hets, resolution = 101):
 
         # input data
-        self.segs = aSCNA_segs
-        self.hets = aSCNA_hets
+        self.segs = aSCNA_segs.copy()
+        self.hets = aSCNA_hets.copy()
         self.n_segs = self.segs.shape[0]
         self.n_hets = self.hets.shape[0]
         self.resolution = resolution
