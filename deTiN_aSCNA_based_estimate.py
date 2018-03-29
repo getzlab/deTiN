@@ -89,7 +89,7 @@ class model:
         self.TiN_likelihood_matrix = TiN_likelihood
 
     def cluster_segments(self):
-        if len(self.segs) > 1:
+        if len(self.segs) >= 3:
             K = range(1, 4)
             N = len(self.hets['seg_id'])
             self.segs.reset_index(inplace=True, drop=False)
