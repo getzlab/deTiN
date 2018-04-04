@@ -6,8 +6,7 @@ with open("deTiN/__about__.py") as reader:
         r'__version__ ?= ?[\'\"]([\w.]+)[\'\"]',
         reader.read()
     ).group(1)
-_README           = os.path.join(os.path.dirname(__file__), 'README.md')
-_LONG_DESCRIPTION = open(_README).read()
+
 
 # Setup information
 setup(
@@ -17,7 +16,7 @@ setup(
     description = 'Somatic analysis toolkit for dealing with tumor in normal contamination',
     author = 'Broad Institute - Cancer Genome Computational Analysis',
     author_email = 'amaro@broadinstitute.org',
-    long_description = _LONG_DESCRIPTION,
+    long_description = 'see publication',
     entry_points = {
         'console_scripts': [
             'deTiN = deTiN.deTiN:main'

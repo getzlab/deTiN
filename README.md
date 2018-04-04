@@ -64,11 +64,18 @@ Genomic characterization is vital to the understanding and treatment of cancer. 
 
 ## Installation
 
-Scripts are standalone but require Numpy, Pandas, Scipy and Python 2.7. 
+deTiN requires Numpy, Pandas, Scipy and Python 2.7. 
+
+pip install deTiN
+
+or
 
 git clone https://github.com/broadinstitute/deTiN.git
 
-deTiN is also available as a docker image: docker pull broadinstitute/detin
+cd deTiN/
+
+python setup install
+
 
 ## Example Data
 
