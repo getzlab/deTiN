@@ -1,0 +1,7 @@
+numpy
+matplotlib
+pandas
+scipy
+sklearn
+random
+argparse
