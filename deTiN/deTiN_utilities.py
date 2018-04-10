@@ -477,6 +477,7 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('DP')
         alt_indel_ix = counts_format.index('TIR')
+        ref_indel_ix = counts_format.index('TAR')
         indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'QSI_ref']))]
         indel_table.reset_index(inplace=True, drop=True)
 
@@ -517,10 +518,10 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         if indel_type.lower() == 'strelka':
             n_depth[index] = int(spl_n[depth_ix])
             n_alt_count[index] = int(spl_n[alt_indel_ix].split(',')[0])
-            n_ref_count[index] = n_depth[index] - n_alt_count[index]
+            n_ref_count[index] = int(spl_n[ref_indel_ix].split(',')[0])
             t_depth[index] = int(spl_t[depth_ix])
             t_alt_count[index] = int(spl_t[alt_indel_ix].split(',')[0])
-            t_ref_count[index] = t_depth[index] - t_alt_count[index]
+            t_ref_count[index] = int(spl_t[ref_indel_ix].split(',')[0])
         if indel_type.lower() == 'mutect2':
             n_alt_count[index] = int(spl_n[depth_ix].split(',')[1])
             n_ref_count[index] = int(spl_n[depth_ix].split(',')[0])
@@ -536,11 +537,11 @@ def read_indel_vcf(vcf,seg_table,indel_type):
             t_alt_count[index] = np.sum([int(spl_t[i]) for i in alt_count_idx])
             t_ref_count[index] = t_depth[index] - t_alt_count[index]
 
-    indel_table['t_depth'] = t_depth
+    indel_table['t_depth'] = t_alt_count + t_ref_count
     indel_table['t_alt_count'] = t_alt_count
     indel_table['t_ref_count'] = t_ref_count
 
-    indel_table['n_depth'] = n_depth
+    indel_table['n_depth'] = n_alt_count + n_ref_count
     indel_table['n_alt_count'] = n_alt_count
     indel_table['n_ref_count'] = n_ref_count
     # only consider sites which were rejected as germline or were passed
