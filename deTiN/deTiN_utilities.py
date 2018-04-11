@@ -469,10 +469,16 @@ def read_indel_vcf(vcf,seg_table,indel_type):
     # read strelka vcf
     # headerline should be in this format: #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
     cols_type = {0: str}
-    indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None,low_memory=False,dtype=cols_type)
+    with open(vcf) as f:
+        content = f.readlines()
+    for line in content:
+        if line[0] == '#' and line[1] != '#':
+            headerline = line.split('\t')
+            break
 
     if indel_type.lower() == 'strelka':
-        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO', 8: 'format', 6: 'filter', 9: 'normal', 10: 'tumor'},
+        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
+        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO', 8: 'format', 6: 'filter', 9: headerline[9].lower(), 10: headerline[10][0:-1].lower()},
                        inplace=True)
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('DP')
@@ -482,17 +488,43 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         indel_table.reset_index(inplace=True, drop=True)
 
     elif indel_type.lower() == 'mutect2':
+        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
         # CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL
-        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 9: 'tumor', 10: 'normal'},
-                           inplace=True)
+        normal_sample = 'normal'
+        tumor_sample = 'tumor'
+        for line in content:
+            if line[0:15] == '##normal_sample':
+                normal_sample = line.split('=')[1][0:-1]
+            if line[0:14] == '##tumor_sample':
+                tumor_sample = line.split('=')[1][0:-1]
+        if tumor_sample == 'tumor' and normal_sample == 'normal':
+            indel_table.rename(
+                columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
+                         6: 'filter', 9: 'tumor', 10: 'normal'},
+                inplace=True)
+        else:
+            if tumor_sample == headerline[9]:
+                indel_table.rename(
+                        columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
+                         6: 'filter', 9: 'tumor', 10: 'normal'},
+                        inplace=True)
+            elif tumor_sample == headerline[10][0:-1]:
+                indel_table.rename(
+                    columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
+                             6: 'filter', 9: 'normal', 10: 'tumor'},
+                    inplace=True)
+            else:
+                print 'failed to read MuTect 2 indels VCF'
+                sys.exit()
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('AD')
-        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal']))]
+        indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal','artifact_in_normal']))]
         indel_table.reset_index(inplace=True, drop=True)
 
     elif indel_type.lower() == 'sanger':
+        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
         # CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  NORMAL  TUMOUR
-        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 10: 'tumor', 9: 'normal'},
+        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 9: headerline[9].lower(), 10: headerline[10][0:-1].lower()},
                            inplace=True)
         b1 = np.logical_or.reduce([indel_table['filter'] == 'F012', indel_table['filter'] == 'F012;F015'])
         b2 = np.logical_or.reduce([indel_table['filter'] == 'PASS', indel_table['filter'] == 'F015'])
