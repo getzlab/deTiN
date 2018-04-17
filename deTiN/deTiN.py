@@ -356,7 +356,7 @@ class output:
                                                    self.SSNVs['p_outlier'] >= 0.01)] = 'KEEP'
         else:
             self.SSNVs['judgement'][self.SSNVs['p_somatic_given_TiN'] > self.threshold] = 'KEEP'
-        if not self.input.indel_file == 'None':
+        if  self.input.indel_file != 'None' and self.input.indel_table.isnull().values.sum() == 0: # 21 Nans if there are no indels to process
             indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior, self.input.resolution)
             indel_model.generate_conditional_ps()
             self.indels = self.input.indel_table
@@ -375,7 +375,8 @@ class output:
                                                      self.indels['p_outlier'] >= 0.01)] = 'PASS'
             else:
                 self.indels['filter'][self.indels['p_somatic_given_TiN'] > self.threshold] = 'PASS'
-
+        elif self.input.indel_table.isnull().values.sum() >  0:
+            self.indels = self.input.indel_table
 
 __version__ = '1.0'
 

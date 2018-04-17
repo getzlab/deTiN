@@ -568,35 +568,38 @@ def read_indel_vcf(vcf,seg_table,indel_type):
             t_depth[index] = np.sum([int(spl_t[i]) for i in total_depth_idx])
             t_alt_count[index] = np.sum([int(spl_t[i]) for i in alt_count_idx])
             t_ref_count[index] = t_depth[index] - t_alt_count[index]
+    if len(indel_table) == 0:
+        indel_table = pd.DataFrame(index=[0],columns=['contig', 'position','ID','REF','ALT','QUAL','INFO','format', 'filter',headerline[9].lower(), headerline[10][0:-1].lower(),
+                                                      't_depth','t_alt_count','t_ref_count','n_alt_count','n_depth','n_ref_count','tau','f_acs','Chromosome','genomic_coord_x'])
+    else:
+        indel_table['t_depth'] = t_alt_count + t_ref_count
+        indel_table['t_alt_count'] = t_alt_count
+        indel_table['t_ref_count'] = t_ref_count
 
-    indel_table['t_depth'] = t_alt_count + t_ref_count
-    indel_table['t_alt_count'] = t_alt_count
-    indel_table['t_ref_count'] = t_ref_count
-
-    indel_table['n_depth'] = n_alt_count + n_ref_count
-    indel_table['n_alt_count'] = n_alt_count
-    indel_table['n_ref_count'] = n_ref_count
+        indel_table['n_depth'] = n_alt_count + n_ref_count
+        indel_table['n_alt_count'] = n_alt_count
+        indel_table['n_ref_count'] = n_ref_count
     # only consider sites which were rejected as germline or were passed
 
-    if type(indel_table['contig'][0]) == str :
-        indel_table['Chromosome'] = chr2num(indel_table['contig'])
-    else:
-        indel_table['Chromosome'] = indel_table['contig']-1
+        if type(indel_table['contig'][0]) == str :
+            indel_table['Chromosome'] = chr2num(indel_table['contig'])
+        else:
+            indel_table['Chromosome'] = indel_table['contig']-1
     # add linear position field and consider only sites which are rejected as germline i.e. PASS or QSI_ref
-    indel_table = indel_table[np.isfinite(indel_table['Chromosome'])]
-    indel_table.reset_index(inplace=True, drop=True)
-    indel_table['genomic_coord_x'] = hg19_to_linear_positions(indel_table['Chromosome'], indel_table['position'])
+        indel_table = indel_table[np.isfinite(indel_table['Chromosome'])]
+        indel_table.reset_index(inplace=True, drop=True)
+        indel_table['genomic_coord_x'] = hg19_to_linear_positions(indel_table['Chromosome'], indel_table['position'])
     # annotate with acs data
-    f_acs = np.zeros([len(indel_table), 1]) + 0.5
-    tau = np.zeros([len(indel_table), 1]) + 2
-    for i, r in seg_table.iterrows():
-        f_acs[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
+        f_acs = np.zeros([len(indel_table), 1]) + 0.5
+        tau = np.zeros([len(indel_table), 1]) + 2
+        for i, r in seg_table.iterrows():
+            f_acs[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
                              np.array(indel_table['genomic_coord_x']) <= r['genomic_coord_end'])] = r.f
-        tau[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
+            tau[np.logical_and(np.array(indel_table['genomic_coord_x']) >= r['genomic_coord_start'],
                            np.array(indel_table['genomic_coord_x']) <= r[
                                'genomic_coord_end'])] = r.tau + 0.001
-    indel_table['tau'] = tau
-    indel_table['f_acs'] = f_acs
+        indel_table['tau'] = tau
+        indel_table['f_acs'] = f_acs
 
     return indel_table
 
