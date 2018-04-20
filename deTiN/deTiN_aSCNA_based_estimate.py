@@ -69,6 +69,8 @@ class model:
                                       np.expand_dims(t_af_w[:, i], 1))
         seg_var = np.zeros([self.n_segs, 1])
         TiN_MAP = np.zeros([self.n_segs, 1], dtype=int)
+        TiN_ci_h = np.zeros([self.n_segs, 1], dtype=int)
+        TiN_ci_l = np.zeros([self.n_segs, 1], dtype=int)
         TiN_likelihood = np.zeros([self.n_segs, self.resolution])
         TiN_post = np.zeros([self.n_segs, self.resolution])
         counter = 0
@@ -85,12 +87,15 @@ class model:
             TiN_post[counter, :] = TiN_post[counter, :] + (1 - np.max(TiN_post[counter, :]))
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
             TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.sum(TiN_post[counter, :]))
+            TiN_ci_l[counter, :] = self.TiN_range[map(lambda x: x>0.025, np.cumsum(TiN_post[counter, :])).index(True)]*100
+            TiN_ci_h[counter, :] = self.TiN_range[map(lambda x: x>0.975, np.cumsum(TiN_post[counter, :])).index(True)]*100
             counter += 1
         self.TiN_post_seg = TiN_post
         self.segs.loc[:, ('TiN_var')] = seg_var
         self.segs.loc[:, ('TiN_MAP')] = self.TiN_range[TiN_MAP] * 100
         self.TiN_likelihood_matrix = TiN_likelihood
-
+        self.segs.loc[:,('TiN_ci_h')] = TiN_ci_h
+        self.segs.loc[:, ('TiN_ci_l')] = TiN_ci_l
     def cluster_segments(self):
         if self.n_segs >= 3:
             K = range(1, 4)
@@ -145,7 +150,7 @@ class model:
     def perform_inference(self):
         # MAP estimation of TiN using copy number data
         print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(
-            np.unique(self.segs['Chromosome']) )
+            np.unique(self.segs['Chromosome']) +1)
         # calculate likelihood function for TiN in each segment
         self.calculate_TiN_likelihood()
         # perform k-means clustering on TiN segment data

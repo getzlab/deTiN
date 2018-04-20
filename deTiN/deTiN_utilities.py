@@ -72,7 +72,7 @@ def remove_sites_near_centromere_and_telomeres(het_table):
     return het_table
 
 
-def filter_hets_based_on_coverage(het_table, depth = 15):
+def filter_hets_based_on_coverage(het_table, depth = 10):
     het_table = het_table[np.logical_and(het_table['READ_DEPTH_N'] > depth, het_table['READ_DEPTH_T'] > depth)]
     het_table.reset_index(inplace=True, drop=True)
     return het_table
@@ -89,7 +89,7 @@ def alternate_file_headers():
     headers = {'alternate_headers_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
                'alternate_headers_start_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
                'alternate_headers_end_position' : ['End', 'End_bp', 'end'],
-               'alternate_headers_chromosome' : ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME','Chromosome'],
+               'alternate_headers_chromosome' : ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME','Chromosome','contig'],
                'alternate_headers_f' : ['f_acs', 'MAF_Post_Mode'],
                'alternate_headers_tau' : ['CN', 'Segment_Mean_Post_Mode'],
                'alternate_headers_alt_count' : ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count'],
@@ -125,10 +125,8 @@ def identify_aSCNAs(seg_table, het_table, aSCNA_thresh = 0.1, n_snps = 20, var_t
         seg_hets = het_table[het_table['seg_id'] == seg_id]
         f_detin[seg_id] = mu_af_n - np.mean(np.abs(seg_hets['AF_T'] - mu_af_n))
         f_variance[seg_id] = np.var(np.abs(seg_hets['AF_T'] - mu_af_n))
-        n_snps_above_mu[seg_id] = np.mean([np.sum(seg_hets['AF_T'] > mu_af_n),
-                                           np.sum(seg_hets['AF_N']) > mu_af_n])
-        n_snps_below_mu[seg_id] = np.mean([np.sum(seg_hets['AF_T'] <= mu_af_n),
-                                           np.sum(seg_hets['AF_N']) <= mu_af_n])
+        n_snps_above_mu[seg_id] = np.sum(seg_hets['AF_T'] > mu_af_n)
+        n_snps_below_mu[seg_id] = np.sum(seg_hets['AF_T'] <= mu_af_n)
         try:
             fe_tuple = fisher_exact([[np.sum(np.logical_and(seg_hets['AF_T'] > mu_af_n,
                                                             seg_hets['AF_N'] > mu_af_n)),
@@ -168,25 +166,17 @@ def ensure_balanced_hets(seg_table, het_table):
     for seg_id, seg in seg_table.iterrows():
         seg_hets = het_table[het_table['seg_id'] == seg_id]
         if np.sum(seg_hets['d'] == -1) > 10 and np.sum(seg_hets['d'] == 1) > 10:
-            alts = np.concatenate([np.array(seg_hets['ALT_COUNT_T'][np.array(seg_hets['d'] == -1)]),
-                                   np.array(seg_hets['REF_COUNT_T'][np.array(seg_hets['d'] == 1)])])
-            refs = np.concatenate([np.array(seg_hets['ALT_COUNT_T'][np.array(seg_hets['d'] == 1)]),
-                                   np.array(seg_hets['REF_COUNT_T'][np.array(seg_hets['d'] == -1)])])
-
-            f = np.mean(np.true_divide(alts, alts + refs))
-            seg_hets = seg_hets[
-                np.logical_and(beta.sf(f, alts + 1, refs + 1) < 0.995, beta.sf(f, alts + 1, refs + 1) > 0.005)]
-            if sum(seg_hets['AF_N'] > 0.5) < sum(seg_hets['AF_N'] <= 0.5):
-                sites = seg_hets['AF_N'] <= 0.5
+            if sum(seg_hets['AF_T'] > 0.5) < sum(seg_hets['AF_T'] <= 0.5):
+                sites = seg_hets['AF_T'] <= 0.5
                 index = list(compress(xrange(len(sites)), sites))
-                ixs = random.sample(index, (sum(seg_hets['AF_N'] <= 0.5) - sum(seg_hets['AF_N'] > 0.5)))
+                ixs = random.sample(index, (sum(seg_hets['AF_T'] <= 0.5) - sum(seg_hets['AF_T'] > 0.5)))
                 seg_hets = seg_hets.drop(seg_hets.index[[ixs]])
                 seg_hets.reset_index(inplace=True, drop=True)
 
-            if sum(seg_hets['AF_N'] > 0.5) > sum(seg_hets['AF_N'] <= 0.5):
-                sites = seg_hets['AF_N'] > 0.5
+            if sum(seg_hets['AF_T'] > 0.5) > sum(seg_hets['AF_T'] <= 0.5):
+                sites = seg_hets['AF_T'] > 0.5
                 index = list(compress(xrange(len(sites)), sites))
-                ixs = random.sample(index, (sum(seg_hets['AF_N'] > 0.5) - sum(seg_hets['AF_N'] <= 0.5)))
+                ixs = random.sample(index, (sum(seg_hets['AF_T'] > 0.5) - sum(seg_hets['AF_T'] <= 0.5)))
                 seg_hets = seg_hets.drop(seg_hets.index[[ixs]])
                 seg_hets.reset_index(inplace=True, drop=True)
             if len(aSCNA_hets) == 0:
@@ -200,6 +190,8 @@ def ensure_balanced_hets(seg_table, het_table):
 def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     # method for plotting clustering results of aSCNA TiN estimates
     X = np.array(ascna_based_model.segs['TiN_MAP'])
+    X_low = np.array(ascna_based_model.segs['TiN_ci_l'])
+    X_high = np.array(ascna_based_model.segs['TiN_ci_h'])
     Y = np.array(ascna_based_model.segs['Chromosome'])
     kIdx = np.max(ascna_based_model.cluster_assignment)
     K = range(1, 4)
@@ -225,20 +217,42 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     if len(X) > 1:
         for i in range(K[kIdx]):
             ind = (ascna_based_model.cluster_assignment == i)
-            ax.scatter(X[ind], Y[ind] + 1, s=30, c=clr[i], label='Cluster %d' % i)
+            ax.errorbar(X[ind], Y[ind], xerr=[X[ind]-X_low[ind],X_high[ind]-X[ind]] , c=clr[i], label='Cluster %d' % i,ls='None',marker='.')
     else:
-        ax.scatter(X,Y+1,s=30,c='b',label='Cluster 1')
+        ax.errorbar(X,Y+1,xerr=[X-X_low,X_high-X],c='b',label='Cluster 1',ls='None',marker='.')
 
     plt.xlabel('MAP tumor in normal estimate (%)')
     plt.ylabel('Chromosome')
     plt.title('Cluster by chromosome and TiN')
-    plt.yticks(np.arange(min(Y) + 1, max(Y) + 2, 2.0))
+    plt.yticks(np.arange(min(Y) , max(Y) + 2, 2.0))
     plt.xticks(np.arange(0, max(X) + 1, np.max([np.round(np.true_divide(np.max(X), 10)), 1])))
     ax.set_xlim([-2, np.max(X) + 2])
 
     fig.set_dpi(150)
     fig.savefig(output_path + '/' + sample_name + '_KmeansEval_scatter_plot.png', bbox_inches='tight')
 
+def plot_aSCNA_het_data(do):
+    fig, ax = plt.subplots(1, 1)
+    ax.plot(do.input.het_table['genomic_coord_x'], do.input.het_table['AF_T'], c=[0.5, 0.5, 0.5], marker='.', ls='None',
+            ms=1, alpha=0.5)
+    tumor_af = ax.plot(do.ascna_based_model.hets['genomic_coord_x'], do.ascna_based_model.hets['AF_T'], c=[0, 0, 1], marker='.',
+            ls='None', ms=5)
+    normal_af = ax.plot(do.ascna_based_model.hets['genomic_coord_x'], do.ascna_based_model.hets['AF_N'], c=[1, 0, 0], marker='.',
+            ls='None', ms=5)
+    fig.set_dpi(300)
+    chrs = hg19_to_linear_positions(np.linspace(0, 23, 24), np.ones([23]))
+    for c in chrs:
+        ax.plot([c, c], [0, 1], 'k--')
+    plt.legend(handles=[tumor_af[0], normal_af[0]],labels=['Tumor', 'Normal'])
+    ax.set_xticks((chrs[1:] + chrs[:-1]) / 2)
+    ax.set_xticklabels((np.linspace(1, 24, 24, dtype=int)), size=5, rotation=90)
+    ax.set_yticks(np.linspace(0, 1, 5))
+    ax.set_yticklabels(np.linspace(0, 1, 5), size=5)
+    ax.set_xlabel('Chromosomes')
+    ax.set_ylabel('Allele fraction')
+    fig.set_dpi(150)
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_TiN_hets_aSCNA_model.png', bbox_inches='tight')
+    fig.savefig(do.input.output_path + '/' + do.input.output_name + '_TiN_hets_aSCNA_model.eps', bbox_inches='tight')
 
 def plot_TiN_models(do):
     fig, ax = plt.subplots(1, 1)

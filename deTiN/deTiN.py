@@ -288,7 +288,7 @@ class output:
             self.TiN_int = np.nanargmax(self.joint_posterior)
             self.TiN = self.TiN_range[self.TiN_int]
         # use only aSCNA based estimate
-        elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= 0.3:
+        elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= .99:
             print 'No aSCNAs only using SSNV based model'
             self.joint_log_likelihood = self.ssnv_based_model.TiN_likelihood
             self.joint_posterior = np.exp(
@@ -356,27 +356,28 @@ class output:
                                                    self.SSNVs['p_outlier'] >= 0.01)] = 'KEEP'
         else:
             self.SSNVs['judgement'][self.SSNVs['p_somatic_given_TiN'] > self.threshold] = 'KEEP'
-        if  self.input.indel_file != 'None' and self.input.indel_table.isnull().values.sum() == 0: # 21 Nans if there are no indels to process
-            indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior, self.input.resolution)
-            indel_model.generate_conditional_ps()
-            self.indels = self.input.indel_table
-            numerator = indel_model.p_somatic * np.expand_dims(indel_model.p_TiN_given_S[:, self.TiN_int], 1)
-            denominator = numerator + np.array(
-                [1 - indel_model.p_somatic] * np.expand_dims(np.nan_to_num(
-                    indel_model.p_TiN_given_G[:, self.TiN_int]), 1))
-            af_n_given_TiN = np.multiply(indel_model.tumor_f, indel_model.CN_ratio[:, self.TiN_int])
-            self.indels.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
-            self.indels.loc[:, 'p_outlier'] = indel_model.rv_normal_af.cdf(af_n_given_TiN)
-            if self.TiN_int == 0:
-                print 'Estimated 0 TiN no indels will be recovered outputing deTiN statistics for each site'
-            elif self.use_outlier_threshold:
-                # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
-                self.indels['filter'][np.logical_and(self.indels['p_somatic_given_TiN'] > self.threshold,
+        if  self.input.indel_file != 'None':
+            if self.input.indel_table.isnull().values.sum() == 0:
+                indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior, self.input.resolution)
+                indel_model.generate_conditional_ps()
+                self.indels = self.input.indel_table
+                numerator = indel_model.p_somatic * np.expand_dims(indel_model.p_TiN_given_S[:, self.TiN_int], 1)
+                denominator = numerator + np.array(
+                    [1 - indel_model.p_somatic] * np.expand_dims(np.nan_to_num(
+                        indel_model.p_TiN_given_G[:, self.TiN_int]), 1))
+                af_n_given_TiN = np.multiply(indel_model.tumor_f, indel_model.CN_ratio[:, self.TiN_int])
+                self.indels.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
+                self.indels.loc[:, 'p_outlier'] = indel_model.rv_normal_af.cdf(af_n_given_TiN)
+                if self.TiN_int == 0:
+                    print 'Estimated 0 TiN no indels will be recovered outputing deTiN statistics for each site'
+                elif self.use_outlier_threshold:
+                    # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
+                    self.indels['filter'][np.logical_and(self.indels['p_somatic_given_TiN'] > self.threshold,
                                                      self.indels['p_outlier'] >= 0.01)] = 'PASS'
-            else:
-                self.indels['filter'][self.indels['p_somatic_given_TiN'] > self.threshold] = 'PASS'
-        elif self.input.indel_table.isnull().values.sum() >  0:
-            self.indels = self.input.indel_table
+                else:
+                    self.indels['filter'][self.indels['p_somatic_given_TiN'] > self.threshold] = 'PASS'
+            elif self.input.indel_table.isnull().values.sum() >  0:
+                self.indels = self.input.indel_table
 
 __version__ = '1.0'
 
@@ -444,7 +445,7 @@ def main():
     parser.add_argument('--SSNV_af_threshold', help='fraction of alternate alleles required for site to be used '
                                                     'for SSNV TiN estimation',
                         required=False,
-                        default=.15)
+                        default=.1)
     parser.add_argument('--aSCNA_variance_threshold',
                         help='variance of segment allele shift tolerated before removing segment '
                              'as artifact', required=False, default=0.025)
@@ -534,10 +535,15 @@ def main():
                          index=None)
     # write plots
     if not np.isnan(ascna_based_model.TiN):
+        do.ascna_based_model.segs['Chromosome'] = do.ascna_based_model.segs['Chromosome'] + 1
+        do.ascna_based_model.segs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_aSCNAs.txt', sep='\t',
+                    index=None)
         du.plot_kmeans_info(ascna_based_model, do.input.output_path, do.input.output_name)
         du.plot_TiN_models(do)
+        du.plot_aSCNA_het_data(do)
+    if not np.isnan(ssnv_based_model.TiN):
         du.plot_SSNVs(do)
-        # write TiN and CIs
+    # write TiN and CIs
     file = open(do.input.output_path + '/' + do.input.output_name + '.TiN_estimate.txt', 'w')
     file.write('%s' % (do.TiN))
     file.close()
