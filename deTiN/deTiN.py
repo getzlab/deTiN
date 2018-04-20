@@ -288,7 +288,7 @@ class output:
             self.TiN_int = np.nanargmax(self.joint_posterior)
             self.TiN = self.TiN_range[self.TiN_int]
         # use only aSCNA based estimate
-        elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= .99:
+        elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= 0.3:
             print 'No aSCNAs only using SSNV based model'
             self.joint_log_likelihood = self.ssnv_based_model.TiN_likelihood
             self.joint_posterior = np.exp(
