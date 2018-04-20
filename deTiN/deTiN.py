@@ -420,7 +420,7 @@ def main():
     parser.add_argument('--output_dir', help='directory to put plots and TiN solution', required=False, default='.')
     # model related parameters
     parser.add_argument('--mutation_prior', help='prior expected ratio of somatic mutations to rare germline events'
-                        , required=False, default=0.15)
+                        , required=False, default=0.05)
     parser.add_argument('--aSCNA_threshold', help='minor allele fraction threshold for calling aSCNAs.'
                         , required=False, default=0.1)
     parser.add_argument('--TiN_prior',
@@ -445,7 +445,7 @@ def main():
     parser.add_argument('--SSNV_af_threshold', help='fraction of alternate alleles required for site to be used '
                                                     'for SSNV TiN estimation',
                         required=False,
-                        default=.1)
+                        default=.2)
     parser.add_argument('--aSCNA_variance_threshold',
                         help='variance of segment allele shift tolerated before removing segment '
                              'as artifact', required=False, default=0.025)
