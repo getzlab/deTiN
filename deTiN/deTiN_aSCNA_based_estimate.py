@@ -80,13 +80,13 @@ class model:
             seg_var[counter] = np.nanvar(
                 np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)], axis=0))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
-            TiN_likelihood[counter, :] = np.sum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)]),
+            TiN_likelihood[counter, :] = np.nansum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)]),
                                                 axis=0)
             prior = np.true_divide(np.ones([1, self.resolution]), self.resolution)
             TiN_post[counter, :] = TiN_likelihood[counter, :] + np.log(prior)
             TiN_post[counter, :] = TiN_post[counter, :] + (1 - np.max(TiN_post[counter, :]))
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
-            TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.sum(TiN_post[counter, :]))
+            TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.nansum(TiN_post[counter, :]))
             TiN_ci_l[counter, :] = self.TiN_range[map(lambda x: x>0.025, np.cumsum(TiN_post[counter, :])).index(True)]*100
             TiN_ci_h[counter, :] = self.TiN_range[map(lambda x: x>0.975, np.cumsum(TiN_post[counter, :])).index(True)]*100
             counter += 1
