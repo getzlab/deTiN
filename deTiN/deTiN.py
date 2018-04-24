@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pandas as pd
 from itertools import compress
-
+import copy
 import deTiN_utilities as du
 import deTiN_SSNV_based_estimate as dssnv
 import deTiN_aSCNA_based_estimate as dascna
@@ -237,7 +237,7 @@ class output:
         self.CI_tin_high = []
         self.CI_tin_low = []
         self.TiN = []
-
+        self.p_null = 1
         # variables
         self.TiN_range = np.linspace(0, 1, num=self.input.resolution)
         self.TiN_int = 0
@@ -269,6 +269,14 @@ class output:
 
             self.TiN_int = np.nanargmax(self.joint_posterior)
             self.TiN = self.TiN_range[self.TiN_int]
+
+            zero_tin_ssnv_model = copy.deepcopy(self.ssnv_based_model)
+            zero_tin_ssnv_model.TiN = 0
+            zero_tin_ssnv_model.expectation_of_z_given_TiN()
+            zero_tin_ssnv_model.maximize_TiN_likelihood()
+            zero_total_l = zero_tin_ssnv_model.TiN_likelihood + self.ascna_based_model.TiN_likelihood
+            zero_total_l = np.exp(zero_total_l - np.nanmax(zero_total_l))
+            self.p_null = np.true_divide(zero_total_l,np.nansum(zero_total_l))[0]
             print 'joint TiN estimate = ' + str(self.TiN)
         # use only ssnv based model
         elif ~np.isnan(self.ascna_based_model.TiN):
@@ -287,6 +295,7 @@ class output:
                      x[1] > 0.975)]
             self.TiN_int = np.nanargmax(self.joint_posterior)
             self.TiN = self.TiN_range[self.TiN_int]
+            self.p_null = self.joint_posterior[0]
         # use only aSCNA based estimate
         elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= 0.3:
             print 'No aSCNAs only using SSNV based model'
@@ -303,6 +312,13 @@ class output:
                      x[1] > 0.975)]
             self.TiN_int = np.nanargmax(self.joint_posterior)
             self.TiN = self.TiN_range[self.TiN_int]
+            zero_tin_ssnv_model = copy.deepcopy(self.ssnv_based_model)
+            zero_tin_ssnv_model.TiN = 0
+            zero_tin_ssnv_model.expectation_of_z_given_TiN()
+            zero_tin_ssnv_model.maximize_TiN_likelihood()
+            zero_total_l = zero_tin_ssnv_model.TiN_likelihood
+            zero_total_l = np.exp(zero_total_l - np.nanmax(zero_total_l))
+            self.p_null = np.true_divide(zero_total_l, np.nansum(zero_total_l))[0]
 
         else:
             print 'insuffcient data to generate TiN estimate. aSCNAs are required to support TiN solutions > 0.3'
@@ -312,9 +328,9 @@ class output:
             self.joint_posterior[0] = 1
             self.TiN_int = 0
             self.TiN = 0
-
+            self.p_null = 1
         pH1 = self.joint_posterior[self.TiN_int]
-        pH0 = self.joint_posterior[0]
+        pH0 = self.p_null
         if np.true_divide(self.input.TiN_prior * pH1,
                           (self.input.TiN_prior * pH1) + ((1 - self.input.TiN_prior) * pH0)) < 0.5:
             print 'insufficient evidence to justify TiN > 0'
