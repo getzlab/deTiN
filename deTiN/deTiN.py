@@ -338,6 +338,8 @@ class output:
             self.joint_posterior[0] = 1
             self.TiN_int = 0
             self.TiN = 0
+            self.CI_tin_high = 0
+            self.CI_tin_low = 0
 
     def reclassify_mutations(self):
         # calculate p(Somatic | given joint TiN estimate)
