@@ -480,11 +480,16 @@ def fix_seg_file_header(seg_file):
 
 
 def read_indel_vcf(vcf,seg_table,indel_type):
-    # read strelka vcf
-    # headerline should be in this format: #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NORMAL	TUMOR
+
+    content = []
+    if vcf[-2:] == 'gz':
+        with gzip.open(vcf, 'r') as f:
+            content = f.readlines()
+    else:
+        with open(vcf) as f:
+            content = f.readlines()
+
     cols_type = {0: str}
-    with open(vcf) as f:
-        content = f.readlines()
     for line in content:
         if line[0] == '#' and line[1] != '#':
             headerline = line.split('\t')
