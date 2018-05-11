@@ -90,14 +90,16 @@ class input:
         self.het_table = []
         self.candidates = []
         self.indel_table = []
+        self.skew = 0.5
 
     def read_call_stats_file(self):
         fields = ['contig', 'position', 'ref_allele', 'alt_allele', 'tumor_name', 'normal_name', 't_alt_count',
                   't_ref_count'
-            , 'n_alt_count', 'n_ref_count', 'failure_reasons', 'judgement']
+            , 'n_alt_count', 'n_ref_count','t_ref_sum','t_alt_sum', 'failure_reasons', 'judgement']
         fields_type = {'contig': str, 'position': np.int, 'ref_allele': str, 'alt_allele': str, 'tumor_name': str,
                        'normal_name': str,
                        't_alt_count': np.int, 't_ref_count': np.int, 'n_alt_count': np.int, 'n_ref_count': np.int,
+                       't_ref_sum': np.int,'t_alt_sum':np.int,
                        'failure_reasons': str, 'judgement': str}
         try:
             self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False,
@@ -188,6 +190,7 @@ class input:
         self.het_table['f'] = f
         d = np.ones([len(self.het_table), 1])
         d[np.array(self.het_table['AF_T'] <= 0.5, dtype=bool)] = -1
+        self.skew = 0.5
         self.het_table['d'] = d
     def read_and_preprocess_SSNVs(self):
         self.read_call_stats_file()
@@ -480,7 +483,7 @@ def main():
         di.read_and_preprocess_SSNVs()
         di.candidates = du.select_candidate_mutations(di.call_stats_table, di.exac_db_file)
         ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution, di.SSNV_af_threshold,
-                                       di.coverage_threshold, di.CancerHotSpotsBED)
+                                       di.coverage_threshold, di.CancerHotSpotsBED, skew = di.skew)
         ssnv_based_model.perform_inference()
         ascna_based_model = dascna.model(di.seg_table, di.het_table, di.resolution)
         ascna_based_model.TiN = np.nan
@@ -548,6 +551,7 @@ def main():
     do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_SSNVs.txt', sep='\t',
                     index=None)
     if not di.indel_file == 'None':
+        #if 'Chromosome' in do.indels.columns:
         do.indels.drop(columns=['Chromosome'],inplace=True)
         do.indels.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_indels.txt', sep='\t',
                          index=None)

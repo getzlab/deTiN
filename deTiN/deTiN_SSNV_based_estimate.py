@@ -14,7 +14,7 @@ class model:
      TiN estimate : model.TiN
      Somatic classification of SSNVs : model.E_z (E_z > 0.5 -> somatic)"""
 
-    def __init__(self, candidate_sites, p_somatic, resolution=101, f_thresh=0.15, depth=15, hot_spots_file = 'NA'):
+    def __init__(self, candidate_sites, p_somatic, resolution=101, f_thresh=0.15, depth=15, hot_spots_file = 'NA', skew = 0.5):
         # variables follow notation:
         # ac = allele count n = normal t = tumor
 
@@ -59,10 +59,10 @@ class model:
         self.CI_tin_high = []
         self.CI_tin_low = []
         self.E_z = np.zeros([self.number_of_sites, 1])
-
+        self.skew = skew
         # expected allele fraction of minor allele given allelic copy data
         self.psi = .5 - np.array(candidate_sites['f_acs'])
-        self.t_het_direction = self.tumor_f < 0.5
+        self.t_het_direction = self.tumor_f < self.skew
         self.t_het_direction = self.t_het_direction * -1
         self.t_het_direction[self.t_het_direction == 0] = 1
 
@@ -94,14 +94,14 @@ class model:
                            np.expand_dims(self.t_ref_count + 1, 1)) - beta._cdf(self.afexp - 0.005,
                                                                                 np.expand_dims(self.t_alt_count + 1, 1),
                                                                                 np.expand_dims(self.t_ref_count + 1, 1))
-        f_t_af = 0.5 - np.abs(0.5 - self.afexp)
+        f_t_af = self.skew - np.abs(self.skew - self.afexp)
         t_af = np.multiply(self.afexp, np.expand_dims(self.n_depth, 1))
 
-        psi_t_af = 0.5 - f_t_af
+        psi_t_af = self.skew - f_t_af
         psi_t_af = np.multiply(psi_t_af, t_het_direction)
         for TiN_idx, TiN in enumerate(self.TiN_range):
             n_ac_given_tin = np.multiply(t_af, np.expand_dims(self.CN_ratio[:, TiN_idx], 1))
-            exp_f = 0.5 + np.multiply(psi_t_af, np.expand_dims(self.CN_ratio[:, TiN_idx], 1))
+            exp_f = self.skew + np.multiply(psi_t_af, np.expand_dims(self.CN_ratio[:, TiN_idx], 1))
             n_het_ac_given_tin = np.multiply(exp_f, self.n_depth[:, np.newaxis])
 
             self.p_TiN_given_S[:, TiN_idx] += np.sum(

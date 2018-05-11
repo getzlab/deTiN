@@ -599,7 +599,6 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         indel_table['n_alt_count'] = n_alt_count
         indel_table['n_ref_count'] = n_ref_count
     # only consider sites which were rejected as germline or were passed
-
         if type(indel_table['contig'][0]) == str :
             indel_table['Chromosome'] = chr2num(indel_table['contig'])
         else:
@@ -619,7 +618,6 @@ def read_indel_vcf(vcf,seg_table,indel_type):
                                'genomic_coord_end'])] = r.tau + 0.001
         indel_table['tau'] = tau
         indel_table['f_acs'] = f_acs
-
     return indel_table
 
 def build_exac_pickle(exac_file):
