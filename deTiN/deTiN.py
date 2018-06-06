@@ -517,7 +517,7 @@ def main():
         # identify candidate mutations based on MuTect flags.
         # kept sites are flagged as KEEP or rejected for normal lod and/or alt_allele_in_normal
         di.candidates = du.select_candidate_mutations(di.call_stats_table, di.exac_db_file)
-
+        n_calls_pre = np.sum(di.candidates['judgement'] == "KEEP")
         # generate SSNV based model using candidate sites
         ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution, di.SSNV_af_threshold,
                                    di.coverage_threshold, di.CancerHotSpotsBED)
@@ -543,13 +543,15 @@ def main():
     if len(do.SSNVs)>1:
         do.reclassify_mutations()
         do.SSNVs.drop('Chromosome', axis=1, inplace=True)
-
+    n_calls_post = np.sum(do.SSNVs['judgement']=="KEEP")
+    n_calls_added = n_calls_post - n_calls_pre
     # make output directory if needed
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
     # write deTiN reclassified SSNVs
     do.SSNVs.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_SSNVs.txt', sep='\t',
                     index=None)
+
     if not di.indel_file == 'None':
         #if 'Chromosome' in do.indels.columns:
         do.indels.drop(columns=['Chromosome'],inplace=True)
@@ -574,6 +576,8 @@ def main():
     file.write('%s - %s' % (str(do.CI_tin_low), str(do.CI_tin_high)))
     file.close()
 
+    file = open(do.input.output_path + '/' + do.input.output_name + '.number_of_SSNVs_added.txt','w')
+    file.write('%s\n'% int(n_calls_added))
 
 if __name__ == "__main__":
     main()
