@@ -476,7 +476,7 @@ def main():
                              'The format of this file is Chromosome\tPosition\tProbability. Note this will override the mutation prior at these locations'
                         , required=False, default='NA')
     parser.add_argument('--only_ascnas',
-                        help='only use ascna data for TiN estimation', required=False, default = False)
+                        help='only use ascna data for TiN estimation',required=False, action='store_true')
     args = parser.parse_args()
     if args.cn_data_path == 'NULL' and args.mutation_data_path == 'NULL':
         print 'One of CN data or SSNV data are required.'
@@ -525,7 +525,7 @@ def main():
         ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution, di.SSNV_af_threshold,
                                    di.coverage_threshold, di.CancerHotSpotsBED)
         ssnv_based_model.perform_inference()
-        if di.only_ascnas == False:
+        if di.only_ascnas == True:
             ssnv_based_model.TiN = np.nan
             print 'Only using aSCNA data'
         ascna = False
