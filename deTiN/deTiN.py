@@ -24,6 +24,7 @@ class input:
         self.exac_db_file = args.exac_data_path
         self.indel_file = args.indel_data_path
         self.indel_type = args.indel_data_type
+        self.only_ascnas = args.only_ascnas
         if type(args.weighted_classification):
             self.weighted_classification = bool(args.weighted_classification)
         else:
@@ -474,6 +475,8 @@ def main():
                         help='Optional BED file of cancer hot spot mutations which the user has a stronger prior on being somatic e.g. BRAF v600E mutations.'
                              'The format of this file is Chromosome\tPosition\tProbability. Note this will override the mutation prior at these locations'
                         , required=False, default='NA')
+    parser.add_argument('--only_ascnas',
+                        help='only use ascna data for TiN estimation', required=False, default = False)
     args = parser.parse_args()
     if args.cn_data_path == 'NULL' and args.mutation_data_path == 'NULL':
         print 'One of CN data or SSNV data are required.'
@@ -522,6 +525,9 @@ def main():
         ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution, di.SSNV_af_threshold,
                                    di.coverage_threshold, di.CancerHotSpotsBED)
         ssnv_based_model.perform_inference()
+        if di.only_ascnas == False:
+            ssnv_based_model.TiN = np.nan
+            print 'Only using aSCNA data'
         ascna = False
         # identify aSCNAs and filter hets
         if len(di.seg_table) > 0:
