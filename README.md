@@ -1,6 +1,6 @@
 ## Synopsis
 
-DeTiN estimates tumor in normal (TiN) based on tumor and matched normal sequencing data. The estimate is based on both candidate SSNVs and aSCNAs. DeTiN then applies the joint TiN estimate to reclassify SSNVs and InDels as somatic or germline. Install and run time on standard exome data is about 5 mins. 
+DeTiN estimates tumor in normal (TiN) based on tumor and matched normal sequencing data. The estimate is based on both candidate SSNVs and aSCNAs. DeTiN then applies the joint TiN estimate to reclassify SSNVs and InDels as somatic or germline. Install and run time on standard exome data is about 5 mins. For help running contact amaro@broadinstitute.org. 
 
 ## Code Example
 Please see github wiki for description of input files. 
@@ -75,11 +75,16 @@ git clone https://github.com/broadinstitute/deTiN.git
 cd deTiN/
 
 python setup install
-
+or
+Run from deTiN directory
 
 ## Example Data
 
 The above code example will run using the included data from an artifically mixed 10% contaminated normal. Input files were generated using MuTect and GATK4ACNV. 
+
+## Data quality
+
+Users should be aware that pervasive sequencing artifacts have the potential to confound deTiN results if they are present in both the tumor and normal samples. For example,a very high level of OxoG artifacts (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3616734/) affecting both tumor and normal samples may appear like somatic events and inflate deTiN's estimate. Users should remove such artifacts or flag them in their call stats files prior to running deTiN. 
 
 
 ## License
