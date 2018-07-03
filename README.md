@@ -82,6 +82,10 @@ Run from deTiN directory
 
 The above code example will run using the included data from an artifically mixed 10% contaminated normal. Input files were generated using MuTect and GATK4ACNV. 
 
+## Data quality
+
+Users should be aware that pervasive sequencing artifacts have the potential to confound deTiN results if they are present in both the tumor and normal samples. For example,a very high level of OxoG artifacts (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3616734/) affecting both tumor and normal samples may appear like somatic events and inflate deTiN's estimate. Users should remove such artifacts or flag them in their call stats files prior to running deTiN. 
+
 
 ## License
 
