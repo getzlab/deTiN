@@ -325,7 +325,7 @@ class output:
             self.p_null = np.true_divide(zero_total_l, np.nansum(zero_total_l))[0]
 
         else:
-            print 'insuffcient data to generate TiN estimate. aSCNAs are required to support TiN solutions > 0.3'
+            print 'insuffcient data to generate TiN estimate.'
             self.CI_tin_high = 0
             self.CI_tin_low = 0
             self.joint_posterior = np.zeros([self.input.resolution, 1])
