@@ -51,15 +51,15 @@ class model:
         self.bic = np.zeros([3, 1])
 
     def calculate_TiN_likelihood(self):
-        self.t_alt_count = self.hets.as_matrix(['ALT_COUNT_T'])
-        self.t_ref_count = self.hets.as_matrix(['REF_COUNT_T'])
+        self.t_alt_count = np.expand_dims(self.hets['ALT_COUNT_T'].values,1)
+        self.t_ref_count = np.expand_dims(self.hets['REF_COUNT_T'].values,1)
         self.afexp = np.repeat(np.expand_dims(self.af, 1), self.n_hets, axis=1).T
         t_af_w = beta._cdf(self.afexp, self.t_alt_count + 1, self.t_ref_count + 1) - beta._cdf(self.afexp-0.005, self.t_alt_count + 1, self.t_ref_count + 1)
         f_t_af = self.mu_af_n - np.abs(self.mu_af_n - self.afexp)
         psi_t_af = self.mu_af_n - f_t_af
         psi_t_af = np.multiply(psi_t_af, np.expand_dims(self.hets['d'], 1))
-        self.n_alt_count = np.squeeze(self.hets.as_matrix(['ALT_COUNT_N']))
-        self.n_ref_count = np.squeeze(self.hets.as_matrix(['REF_COUNT_N']))
+        self.n_alt_count = np.squeeze(self.hets['ALT_COUNT_N'].values)
+        self.n_ref_count = np.squeeze(self.hets['REF_COUNT_N'].values)
         self.p_TiN = np.zeros([self.n_hets, self.resolution])
         for i, f in enumerate(self.af):
             exp_f = self.mu_af_n + np.multiply(np.expand_dims(psi_t_af[:, i], 1), self.CN_ratio)
