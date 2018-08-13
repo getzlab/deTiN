@@ -33,10 +33,13 @@ def is_member(a, b):
 
 
 def chr2num(chr):
+    if chr[0][0:2] == 'ch':
+        chr = [c[3:] for c in chr]
     # convert chromosome from strings to ints
-    chr[chr == 'X'] = '23'
-    chr[chr == 'Y'] = '24'
-    chr[np.array(chr == 'MT') | np.array(chr == 'M')] = '25'
+    chr = ['23' if x == 'X' else x for x in chr]
+    chr = ['24' if x == 'Y' else x for x in chr]
+    chr = ['25' if x == 'M' else x for x in chr]
+    chr = ['25' if x == 'MT' else x for x in chr]
     chromosomes = np.array(range(1, 26))
     return np.array(is_member(chr, chromosomes.astype(np.str)))
 
@@ -87,13 +90,14 @@ def filter_segments_based_on_size_f_and_tau(seg_table, aSCNA_thresh, n_probes = 
 def alternate_file_headers():
 
     headers = {'alternate_headers_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
-               'alternate_headers_start_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position'],
-               'alternate_headers_end_position' : ['End', 'End_bp', 'end'],
+               'alternate_headers_start_position' : ['Start', 'Start_bp', 'start','position','pos','POS','Start_position','START'],
+               'alternate_headers_end_position' : ['End', 'End_bp', 'end','END'],
                'alternate_headers_chromosome' : ['Contig', 'chrom', 'CONTIG', 'chr', 'Chrom', 'CHROMOSOME','Chromosome','contig'],
-               'alternate_headers_f' : ['f_acs', 'MAF_Post_Mode'],
-               'alternate_headers_tau' : ['CN', 'Segment_Mean_Post_Mode'],
+               'alternate_headers_f' : ['f_acs', 'MAF_Post_Mode','MINOR_ALLELE_FRACTION_POSTERIOR_50'],
+               'alternate_headers_tau' : ['CN', 'Segment_Mean_Post_Mode','LOG2_COPY_RATIO_POSTERIOR_50'],
                'alternate_headers_alt_count' : ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count'],
-               'alternate_headers_ref_count' : ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count'] }
+               'alternate_headers_ref_count' : ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count'],
+               'alternate_headers_n_probes': ['n_probes','NUM_POINTS_COPY_RATIO']}
     return headers
 
 def read_file_header(text_file):
@@ -416,7 +420,7 @@ def fix_seg_file_header(seg_file):
 
     headers = alternate_file_headers()
 
-    required_headers = ['Chromosome', 'Start.bp', 'End.bp', 'f', 'tau']
+    required_headers = ['Chromosome', 'Start.bp', 'End.bp', 'f', 'tau','n_probes']
 
     if np.sum(np.isfinite((is_member(required_headers, seg_file.columns)))) == 5:
         return seg_file
@@ -464,7 +468,7 @@ def fix_seg_file_header(seg_file):
                 else:
                     idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_f'], seg_file.columns)))
                     seg_file.rename(columns={headers['alternate_headers_f'][idx_replace[0][0]]: 'f'}, inplace=True)
-                    print 'changing header of het file from ' + headers['alternate_headers_f'][idx_replace[0][0]] + ' to f'
+                    print 'changing header of seg file from ' + headers['alternate_headers_f'][idx_replace[0][0]] + ' to f'
 
             if required_headers[i] == 'tau':
                 if np.sum(np.isfinite(is_member(headers['alternate_headers_tau'], seg_file.columns))) == 0 or np.sum(
@@ -474,7 +478,19 @@ def fix_seg_file_header(seg_file):
                 else:
                     idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_tau'], seg_file.columns)))
                     seg_file.rename(columns={headers['alternate_headers_tau'][idx_replace[0][0]]: 'tau'}, inplace=True)
-                    print 'changing header of het file from ' + headers['alternate_headers_tau'][idx_replace[0][0]] + ' to tau'
+                    if headers['alternate_headers_tau'][idx_replace[0][0]] == 'LOG2_COPY_RATIO_POSTERIOR_50':
+                        print('transforming log2 data tau column to 2 centered: 2^(CNratio)+1')
+                        seg_file['tau'] = np.power(2,seg_file['tau'])+1
+                    print 'changing header of seg file from ' + headers['alternate_headers_tau'][idx_replace[0][0]] + ' to tau'
+            if required_headers[i] == 'n_probes':
+                if np.sum(np.isfinite(is_member(headers['alternate_headers_n_probes'], seg_file.columns))) == 0 or np.sum(
+                        np.isfinite(is_member(headers['alternate_headers_n_probes'], seg_file.columns))) > 1:
+                    sys.exit(
+                        'missing required header n_probes and could not replace with any one of alternates')
+                else:
+                    idx_replace = np.where(np.isfinite(is_member(headers['alternate_headers_n_probes'], seg_file.columns)))
+                    seg_file.rename(columns={headers['alternate_headers_n_probes'][idx_replace[0][0]]: 'n_probes'}, inplace=True)
+                    print 'changing header of seg file from ' + headers['alternate_headers_n_probes'][idx_replace[0][0]] + ' to n_probes'
 
         return seg_file
 

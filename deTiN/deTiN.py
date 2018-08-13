@@ -155,7 +155,6 @@ class input:
             self.seg_table = pd.read_csv(self.seg_file, '\t', index_col=False, low_memory=False, comment='#',
                                      dtype=cols_seg_type)
             self.seg_table = du.fix_seg_file_header(self.seg_table)
-
             self.seg_table['Chromosome'] = du.chr2num(np.array(self.seg_table['Chromosome']))
 
             self.seg_table['genomic_coord_start'] = du.hg19_to_linear_positions(np.array(self.seg_table['Chromosome']),
