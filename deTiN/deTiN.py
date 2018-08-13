@@ -560,7 +560,7 @@ def main():
 
     if not di.indel_file == 'None':
         #if 'Chromosome' in do.indels.columns:
-        do.indels.drop(columns=['Chromosome'],inplace=True)
+        do.indels.drop('Chromosome', axis=1, inplace=True)
         do.indels.to_csv(path_or_buf=do.input.output_path + '/' + do.input.output_name + '.deTiN_indels.txt', sep='\t',
                          index=None)
     # write plots
