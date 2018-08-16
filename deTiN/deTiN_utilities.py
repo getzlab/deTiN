@@ -348,8 +348,10 @@ def hg19_to_linear_positions(chromosome, position, **keyword_parameters):
                       102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129895, 51304566,
                       155270560, 59373566, 16569])  # chromosome lengths from genome-mysql.cse.ucsc.edu
     if build == 'hg38':
-        # add support for hg38
-        sys.exit('support still missing for hg38')
+        L = np.array([248956422,242193529,198295559,190214555,181538259,170805979,159345973,
+                      145138636,138394717,133797422,135086622,133275309,114364328,107043718,
+                      101991189,90338345,83257441,80373285,58617616,64444167,46709983,50818468,
+                      156040895,57227415,16569])
 
     C = np.append(1, np.cumsum(L))
     x = np.array([chromosome[int(i)] for i in np.arange(0, len(position))])
