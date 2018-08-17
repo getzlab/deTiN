@@ -96,11 +96,10 @@ class input:
     def read_call_stats_file(self):
         fields = ['contig', 'position', 'ref_allele', 'alt_allele', 'tumor_name', 'normal_name', 't_alt_count',
                   't_ref_count'
-            , 'n_alt_count', 'n_ref_count','t_ref_sum','t_alt_sum', 'failure_reasons', 'judgement']
+            , 'n_alt_count', 'n_ref_count', 'failure_reasons', 'judgement']
         fields_type = {'contig': str, 'position': np.int, 'ref_allele': str, 'alt_allele': str, 'tumor_name': str,
                        'normal_name': str,
                        't_alt_count': np.int, 't_ref_count': np.int, 'n_alt_count': np.int, 'n_ref_count': np.int,
-                       't_ref_sum': np.int,'t_alt_sum':np.int,
                        'failure_reasons': str, 'judgement': str}
         try:
             self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False,

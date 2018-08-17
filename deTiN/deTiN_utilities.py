@@ -97,7 +97,7 @@ def alternate_file_headers():
                'alternate_headers_tau' : ['CN', 'Segment_Mean_Post_Mode','LOG2_COPY_RATIO_POSTERIOR_50'],
                'alternate_headers_alt_count' : ['t_alt_count', 'n_alt_count', 'alt_count', 'i_t_alt_count', 'i_n_alt_count'],
                'alternate_headers_ref_count' : ['t_ref_count', 'n_ref_count', 'ref_count', 'i_t_ref_count', 'i_n_ref_count'],
-               'alternate_headers_n_probes': ['n_probes','NUM_POINTS_COPY_RATIO']}
+               'alternate_headers_n_probes': ['n_probes','NUM_POINTS_COPY_RATIO','Num_Targets']}
     return headers
 
 def read_file_header(text_file):
