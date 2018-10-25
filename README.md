@@ -13,7 +13,7 @@ See project Wiki for full description of required fields for input data.
 
 Input data:
 
-–-mutation_data_path mutation statistics file (MuTect call stats file (or similar variants file)).
+–-mutation_data_path mutation statistics file (MuTect call stats file (or similar variants file e.g. Strelka v.2.9.7 or greater)).
 
 –-cn_data_path allelic copy number segmentation file (GATK4 AllelicCNV seg file).
 
