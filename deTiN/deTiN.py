@@ -333,8 +333,9 @@ class output:
             self.p_null = 1
         pH1 = self.joint_posterior[self.TiN_int]
         pH0 = self.p_null
-        if np.true_divide(self.input.TiN_prior * pH1,
-                          (self.input.TiN_prior * pH1) + ((1 - self.input.TiN_prior) * pH0)) < 0.5:
+        p_model = np.true_divide(self.input.TiN_prior * pH1,
+                          (self.input.TiN_prior * pH1) + ((1 - self.input.TiN_prior) * pH0))
+        if p_model < 0.5 or ~np.isfinite(p_model):
             print 'insufficient evidence to justify TiN > 0'
             self.joint_posterior = np.zeros([self.input.resolution, 1])
             self.joint_posterior[0] = 1

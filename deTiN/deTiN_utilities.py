@@ -677,10 +677,11 @@ def remove_exac_sites_from_call_stats(call_stats_table, exac_file):
         keep = np.ones_like(call_stats_table['position'], dtype=bool)
     for index, row in call_stats_table.iterrows():
         key = str(row['contig']) + '_' + str(row['position'])
-        try:
-            exac_dict[key]
-            # print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
-            keep[index] = False
-        except KeyError:
-            pass
+        if row['judgement'] == 'REJECT':
+            try:
+                exac_dict[key]
+                # print 'removing site '+ key+ ' minor allele fraction = ' + str(exac_dict[key]['AF'])
+                keep[index] = False
+            except KeyError:
+                pass
     return call_stats_table[keep]
