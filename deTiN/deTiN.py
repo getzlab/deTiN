@@ -249,6 +249,8 @@ class output:
         # defines whether to remove events based on predicted exceeding predicted allele fractions
         # if Beta_cdf(predicted_normal_af;n_alt_count+1,n_ref_count+1) <= 0.01 we remove the variant
         self.use_outlier_threshold = input.use_outlier_removal
+        if self.input.indel_table.isnull().values.sum() == 0:
+            self.indels = self.input.indel_table
 
     def calculate_joint_estimate(self):
         # do not use SSNV based estimate if it exceeds 0.3 (this estimate can be unreliable at high TiNs due to
@@ -321,7 +323,6 @@ class output:
             zero_total_l = zero_tin_ssnv_model.TiN_likelihood
             zero_total_l = np.exp(zero_total_l - np.nanmax(zero_total_l))
             self.p_null = np.true_divide(zero_total_l, np.nansum(zero_total_l))[0]
-
         else:
             print 'insuffcient data to generate TiN estimate.'
             self.CI_tin_high = 0
@@ -377,7 +378,7 @@ class output:
                                                    self.SSNVs['p_outlier'] >= 0.01)] = 'KEEP'
         else:
             self.SSNVs['judgement'][self.SSNVs['p_somatic_given_TiN'] > self.threshold] = 'KEEP'
-        if  self.input.indel_file != 'None':
+        if self.input.indel_file != 'None':
             if self.input.indel_table.isnull().values.sum() == 0:
                 indel_model = dssnv.model(self.input.indel_table, self.input.mutation_prior, self.input.resolution)
                 indel_model.generate_conditional_ps()
