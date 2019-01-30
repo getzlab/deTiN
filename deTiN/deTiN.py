@@ -8,7 +8,7 @@ import copy
 import deTiN_utilities as du
 import deTiN_SSNV_based_estimate as dssnv
 import deTiN_aSCNA_based_estimate as dascna
-
+import numpy.ma as ma
 
 class input:
     """class which holds the required detin somatic data prior to model"""
@@ -333,7 +333,13 @@ class output:
             self.TiN = 0
             self.p_null = 1
         pH1 = self.joint_posterior[self.TiN_int]
+        #print(self.joint_posterior)
+        #print(self.p_null)
+        # code to deal with underflows
+        if ma.is_masked(self.p_null):
+            self.p_null = 0
         pH0 = self.p_null
+
         p_model = np.true_divide(self.input.TiN_prior * pH1,
                           (self.input.TiN_prior * pH1) + ((1 - self.input.TiN_prior) * pH0))
         if p_model < 0.5 or ~np.isfinite(p_model):
