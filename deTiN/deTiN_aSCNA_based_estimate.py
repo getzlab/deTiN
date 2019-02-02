@@ -64,6 +64,7 @@ class model:
         for i, f in enumerate(self.af):
             exp_f = self.mu_af_n + np.multiply(np.expand_dims(psi_t_af[:, i], 1), self.CN_ratio)
             exp_f[exp_f < 0] = 0
+            exp_f[exp_f > 1] = 1
             self.p_TiN += np.multiply(beta._pdf(exp_f, np.expand_dims(self.n_alt_count + 1, 1),
                                                 np.expand_dims(self.n_ref_count + 1, 1)) * 0.01,
                                       np.expand_dims(t_af_w[:, i], 1))
