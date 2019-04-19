@@ -113,7 +113,7 @@ class input:
                                                 comment='#', usecols=fields, dtype=fields_type)
             except (ValueError, LookupError):
                 print 'Error reading call stats skipping first two rows and trying again'
-                self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False,
+                self.call_stats_table   = pd.read_csv(self.call_stats_file, '\t', index_col=False,
                                                 comment='#', skiprows=2, usecols=fields, dtype=fields_type)
         if type(self.call_stats_table['contig'][0]) == str:
             self.call_stats_table['Chromosome'] = du.chr2num(np.array(self.call_stats_table['contig']))
@@ -263,6 +263,10 @@ class output:
         # do not use SSNV based estimate if it exceeds 0.3 (this estimate can be unreliable at high TiNs due to
         # germline events)
         if self.ssnv_based_model.TiN <= 0.3 and ~np.isnan(self.ascna_based_model.TiN):
+            if len(self.ascna_based_model.centroids) > 1:
+                reselect_cluster = np.argmin(np.abs(self.ascna_based_model.centroids / 100 - self.ssnv_based_model.TiN))
+                self.ascna_based_model.TiN_likelihood = self.ascna_based_model.cluster_TiN_likelihoods[reselect_cluster]
+                print('reselected cluster based on SSNVs')
             # combine independent likelihoods
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood + self.ssnv_based_model.TiN_likelihood
             # normalize likelihood to calculate posterior

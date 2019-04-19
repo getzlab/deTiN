@@ -94,6 +94,7 @@ class model:
                            np.expand_dims(self.t_ref_count + 1, 1)) - beta._cdf(self.afexp - 0.005,
                                                                                 np.expand_dims(self.t_alt_count + 1, 1),
                                                                                 np.expand_dims(self.t_ref_count + 1, 1))
+
         f_t_af = self.skew - np.abs(self.skew - self.afexp)
         t_af = np.multiply(self.afexp, np.expand_dims(self.n_depth, 1))
 

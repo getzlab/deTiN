@@ -1,12 +1,11 @@
 from __future__ import division
 import numpy as np
 from scipy.stats import beta
-from scipy.stats import norm
-from sklearn import preprocessing
 from scipy.cluster.vq import kmeans
 from scipy.stats import mode
 from itertools import combinations
 import pandas as pd
+import deTiN_utilities as du
 
 
 np.seterr(all='ignore')
@@ -49,12 +48,13 @@ class model:
         self.cluster_assignment = np.zeros([self.n_segs, 1])
         self.centroids = np.zeros([3, 1])
         self.bic = np.zeros([3, 1])
+        self.cluster_TiN_likelihoods = []
 
     def calculate_TiN_likelihood(self):
         self.t_alt_count = np.expand_dims(self.hets['ALT_COUNT_T'].values,1)
         self.t_ref_count = np.expand_dims(self.hets['REF_COUNT_T'].values,1)
         self.afexp = np.repeat(np.expand_dims(self.af, 1), self.n_hets, axis=1).T
-        t_af_w = beta._cdf(self.afexp, self.t_alt_count + 1, self.t_ref_count + 1) - beta._cdf(self.afexp-0.005, self.t_alt_count + 1, self.t_ref_count + 1)
+        t_af_w = beta._logpdf(self.afexp-1e-6, self.t_alt_count + 1, self.t_ref_count + 1)+np.log(0.005)
         f_t_af = self.mu_af_n - np.abs(self.mu_af_n - self.afexp)
         psi_t_af = self.mu_af_n - f_t_af
         psi_t_af = np.multiply(psi_t_af, np.expand_dims(self.hets['d'], 1))
@@ -65,9 +65,10 @@ class model:
             exp_f = self.mu_af_n + np.multiply(np.expand_dims(psi_t_af[:, i], 1), self.CN_ratio)
             exp_f[exp_f < 0] = 0
             exp_f[exp_f > 1] = 1
-            self.p_TiN += np.multiply(beta._pdf(exp_f, np.expand_dims(self.n_alt_count + 1, 1),
-                                                np.expand_dims(self.n_ref_count + 1, 1)) * 0.01,
-                                      np.expand_dims(t_af_w[:, i], 1))
+            a = exp_f*(self.t_alt_count+self.t_ref_count)
+            b = (self.t_alt_count+self.t_ref_count) - a
+            self.p_TiN += du.beta_binomial_pdf(self.n_alt_count,self.n_alt_count+self.n_ref_count,
+                                           a+1,b+1) + t_af_w[:, i].reshape(-1,1)
         seg_var = np.zeros([self.n_segs, 1])
         TiN_MAP = np.zeros([self.n_segs, 1], dtype=int)
         TiN_ci_h = np.zeros([self.n_segs, 1], dtype=int)
@@ -76,16 +77,16 @@ class model:
         TiN_post = np.zeros([self.n_segs, self.resolution])
         counter = 0
         for seg_id, seg in self.segs.iterrows():
-            self.seg_likelihood[seg_id] = np.sum(
-                np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)]), axis=0)
+            self.seg_likelihood[seg_id] = np.nansum(
+                self.p_TiN[self.hets['seg_id'] == seg_id], axis=0)
             seg_var[counter] = np.nanvar(
-                np.argmax(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)], axis=0))
+                np.argmax(self.p_TiN[self.hets['seg_id'] == seg_id], 1))
             TiN_MAP[counter] = np.nanargmax(self.seg_likelihood[seg_id])
-            TiN_likelihood[counter, :] = np.nansum(np.log(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)]),
+            TiN_likelihood[counter, :] = np.nansum(self.p_TiN[np.array(self.hets['seg_id'] == seg_id, dtype=bool)],
                                                 axis=0)
             prior = np.true_divide(np.ones([1, self.resolution]), self.resolution)
             TiN_post[counter, :] = TiN_likelihood[counter, :] + np.log(prior)
-            TiN_post[counter, :] = TiN_post[counter, :] + (1 - np.max(TiN_post[counter, :]))
+            TiN_post[counter, :] = TiN_post[counter, :] - np.max(TiN_post[counter, :])
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
             TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.nansum(TiN_post[counter, :]))
             TiN_ci_l[counter, :] = self.TiN_range[map(lambda x: x>0.025, np.cumsum(TiN_post[counter, :])).index(True)]*100
@@ -126,18 +127,18 @@ class model:
                            np.log(
                                N))) + delta_bic
             if len(centroids[2])>2:
-                dist_btwn_c3 = np.min([abs(i - j) for i, j in combinations(centroids[2], 2)])
+                dist_btwn_c3 = np.mean([abs(i - j) for i, j in combinations(centroids[2], 2)])
             else:
                 dist_btwn_c3 = 0
             if len(centroids[1]) > 1:
                 dist_btwn_c2 = np.abs(np.diff(centroids[1]))
             else:
                 dist_btwn_c2 = 0
-            if dist_btwn_c3 < 2 * np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 > 2 * np.nanmax(self.cl_var[1, :]):
+            if dist_btwn_c3 <  np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 >  np.nanmax(self.cl_var[1, :]):
                 solution_idx = np.nanargmin(self.bic[0:1])
                 self.cluster_assignment = cluster_assignment[solution_idx]
                 self.centroids = centroids[solution_idx]
-            if dist_btwn_c3 < 2 * np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 < 2 * np.nanmax(self.cl_var[1, :]):
+            if dist_btwn_c3 <  np.nanmax(self.cl_var[2, :]) and dist_btwn_c2 <  np.nanmax(self.cl_var[1, :]):
                 self.cluster_assignment = cluster_assignment[0]
                 self.centroids = centroids[0]
             else:
@@ -146,7 +147,7 @@ class model:
                 self.centroids = centroids[solution_idx]
         else:
             self.cluster_assignment = 0
-            self.centroids = self.segs['TiN_MAP']
+            self.centroids = np.mean(self.segs['TiN_MAP'])
 
     def perform_inference(self):
         # MAP estimation of TiN using copy number data
@@ -158,6 +159,9 @@ class model:
         self.cluster_segments()
         if np.max(self.cluster_assignment) > 0:
             print 'detected ' + str(np.max(self.cluster_assignment) + 1) + ' clusters'
+            self.cluster_TiN_likelihoods = [
+                np.sum(self.TiN_likelihood_matrix[self.cluster_assignment == mode_cluster, :], axis=0) for mode_cluster
+                in range(len(self.centroids))]
             if self.reporting_cluster == 'mode':
                 mode_cluster = mode(self.cluster_assignment)[0][0]
             elif self.reporting_cluster == 'min':
@@ -166,6 +170,7 @@ class model:
             self.TiN = self.TiN_range[
                 np.nanargmax(np.sum(self.TiN_likelihood_matrix[self.cluster_assignment == mode_cluster, :], axis=0))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix[self.cluster_assignment == mode_cluster, :], axis=0)
+
             posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
             self.CI_tin_low = self.TiN_range[
                 next(x[0] for x in

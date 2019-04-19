@@ -10,9 +10,15 @@ import matplotlib
 import pickle
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+from scipy.special import gammaln
 
 random.seed(1)
 
+def beta_binomial_pdf(x,n,a,b):
+    x = x.reshape(-1,1)
+    n = n.reshape(-1,1)
+    return gammaln(n+1) + gammaln(x+a) + gammaln(n-x+b) + gammaln(a+b) - \
+        (gammaln(x+1) + gammaln(n-x+1) + gammaln(a) + gammaln(b) + gammaln(n+a+b))
 
 def is_number(s):
     try:
