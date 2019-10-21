@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from itertools import compress
 import copy
+
 import deTiN_utilities as du
 import deTiN_SSNV_based_estimate as dssnv
 import deTiN_aSCNA_based_estimate as dascna
@@ -112,7 +113,7 @@ class input:
                 self.call_stats_table = pd.read_csv(self.call_stats_file, '\t', index_col=False,
                                                 comment='#', usecols=fields, dtype=fields_type)
             except (ValueError, LookupError):
-                print 'Error reading call stats skipping first two rows and trying again'
+                print('Error reading call stats skipping first two rows and trying again')
                 self.call_stats_table   = pd.read_csv(self.call_stats_file, '\t', index_col=False,
                                                 comment='#', skiprows=2, usecols=fields, dtype=fields_type)
         if type(self.call_stats_table['contig'][0]) == str:
@@ -187,7 +188,7 @@ class input:
         for seg_index, seg in self.seg_table.iterrows():
             het_index = np.logical_and(self.het_table['genomic_coord_x'] >= seg['genomic_coord_start'],
                                        self.het_table['genomic_coord_x'] <= seg['genomic_coord_end'])
-            ix = list(compress(xrange(len(het_index)), het_index))
+            ix = list(compress(range(len(het_index)), het_index))
             seg_id[ix] = seg_index
             tau[ix] = seg['tau']
             f[ix] = seg['f']
@@ -206,8 +207,8 @@ class input:
             if not self.indel_type == 'None':
                 self.indel_table = du.read_indel_vcf(self.indel_file, self.seg_table, self.indel_type)
             else:
-                print 'Warning: if indels are provided you must also specify indel data source using --indel_data_type'
-                print 'no indels will be returned'
+                print('Warning: if indels are provided you must also specify indel data source using --indel_data_type')
+                print('no indels will be returned')
                 self.indel_file = 'None'
                 self.indel_type = 'None'
     def read_and_preprocess_aSCNAs(self):
@@ -292,11 +293,11 @@ class output:
             zero_total_l = zero_tin_ssnv_model.TiN_likelihood + self.ascna_based_model.TiN_likelihood
             zero_total_l = np.exp(zero_total_l - np.nanmax(zero_total_l))
             self.p_null = np.true_divide(zero_total_l,np.nansum(zero_total_l))[0]
-            print 'joint TiN estimate = ' + str(self.TiN)
+            print('joint TiN estimate = ' + str(self.TiN))
         # use only ssnv based model
         elif ~np.isnan(self.ascna_based_model.TiN):
             # otherwise TiN estimate is = to aSCNA estimate
-            print 'SSNV based TiN estimate exceed 0.3 using only aSCNA based estimate'
+            print('SSNV based TiN estimate exceed 0.3 using only aSCNA based estimate')
             self.joint_log_likelihood = self.ascna_based_model.TiN_likelihood
             self.joint_posterior = np.exp(
                 self.ascna_based_model.TiN_likelihood - np.nanmax(self.ascna_based_model.TiN_likelihood))
@@ -313,7 +314,7 @@ class output:
             self.p_null = self.joint_posterior[0]
         # use only aSCNA based estimate
         elif ~np.isnan(self.ssnv_based_model.TiN) and self.ssnv_based_model.TiN <= 0.3:
-            print 'No aSCNAs only using SSNV based model'
+            print('No aSCNAs only using SSNV based model')
             self.joint_log_likelihood = self.ssnv_based_model.TiN_likelihood
             self.joint_posterior = np.exp(
                 self.ssnv_based_model.TiN_likelihood - np.nanmax(self.ssnv_based_model.TiN_likelihood))
@@ -335,7 +336,7 @@ class output:
             zero_total_l = np.exp(zero_total_l - np.nanmax(zero_total_l))
             self.p_null = np.true_divide(zero_total_l, np.nansum(zero_total_l))[0]
         else:
-            print 'insuffcient data to generate TiN estimate.'
+            print('insuffcient data to generate TiN estimate.')
             self.CI_tin_high = 0
             self.CI_tin_low = 0
             self.joint_posterior = np.zeros([self.input.resolution, 1])
@@ -354,7 +355,7 @@ class output:
         p_model = np.true_divide(self.input.TiN_prior * pH1,
                           (self.input.TiN_prior * pH1) + ((1 - self.input.TiN_prior) * pH0))
         if p_model < 0.5 or ~np.isfinite(p_model):
-            print 'insufficient evidence to justify TiN > 0'
+            print('insufficient evidence to justify TiN > 0')
             self.joint_posterior = np.zeros([self.input.resolution, 1])
             self.joint_posterior[0] = 1
             self.TiN_int = 0
@@ -388,7 +389,7 @@ class output:
         # probability of normal allele fraction less than or equal to predicted fraction
         self.SSNVs.loc[:, 'p_outlier'] = self.ssnv_based_model.rv_normal_af.cdf(af_n_given_TiN + 0.01)
         if self.TiN_int == 0:
-            print 'Estimated 0 TiN no SSNVs will be recovered outputing deTiN statistics for each site'
+            print('Estimated 0 TiN no SSNVs will be recovered outputing deTiN statistics for each site')
         elif self.use_outlier_threshold:
             # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
             self.SSNVs['judgement'][np.logical_and(self.SSNVs['p_somatic_given_TiN'] > self.threshold,
@@ -408,7 +409,7 @@ class output:
                 self.indels.loc[:, ('p_somatic_given_TiN')] = np.nan_to_num(np.true_divide(numerator, denominator))
                 self.indels.loc[:, 'p_outlier'] = indel_model.rv_normal_af.cdf(af_n_given_TiN)
                 if self.TiN_int == 0:
-                    print 'Estimated 0 TiN no indels will be recovered outputing deTiN statistics for each site'
+                    print('Estimated 0 TiN no indels will be recovered outputing deTiN statistics for each site')
                 elif self.use_outlier_threshold:
                     # remove outliers mutations p(af_n >= E[af_n|TiN]) < 0.05
                     self.indels['filter'][np.logical_and(self.indels['p_somatic_given_TiN'] > self.threshold,
@@ -496,7 +497,7 @@ def main():
                         help='only use ascna data for TiN estimation',required=False, action='store_true')
     args = parser.parse_args()
     if args.cn_data_path == 'NULL' and args.mutation_data_path == 'NULL':
-        print 'One of CN data or SSNV data are required.'
+        print('One of CN data or SSNV data are required.')
         sys.exit()
     elif args.cn_data_path =='NULL':
         di = input(args)
@@ -544,7 +545,7 @@ def main():
         ssnv_based_model.perform_inference()
         if di.only_ascnas == True:
             ssnv_based_model.TiN = np.nan
-            print 'Only using aSCNA data'
+            print('Only using aSCNA data')
         ascna = False
         # identify aSCNAs and filter hets
         if len(di.seg_table) > 0:

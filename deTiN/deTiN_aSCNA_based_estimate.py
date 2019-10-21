@@ -89,8 +89,8 @@ class model:
             TiN_post[counter, :] = TiN_post[counter, :] - np.max(TiN_post[counter, :])
             TiN_post[counter, :] = np.exp(TiN_post[counter, :])
             TiN_post[counter, :] = np.true_divide(TiN_post[counter, :], np.nansum(TiN_post[counter, :]))
-            TiN_ci_l[counter, :] = self.TiN_range[map(lambda x: x>0.025, np.cumsum(TiN_post[counter, :])).index(True)]*100
-            TiN_ci_h[counter, :] = self.TiN_range[map(lambda x: x>0.975, np.cumsum(TiN_post[counter, :])).index(True)]*100
+            TiN_ci_l[counter, :] = self.TiN_range[list(map(lambda x: x>0.025, np.cumsum(TiN_post[counter, :]))).index(True)]*100
+            TiN_ci_h[counter, :] = self.TiN_range[list(map(lambda x: x>0.975, np.cumsum(TiN_post[counter, :]))).index(True)]*100
             counter += 1
         self.TiN_post_seg = TiN_post
         self.segs.loc[:, ('TiN_var')] = seg_var
@@ -145,20 +145,21 @@ class model:
                 solution_idx = np.nanargmin(self.bic)
                 self.cluster_assignment = cluster_assignment[solution_idx]
                 self.centroids = centroids[solution_idx]
+
         else:
             self.cluster_assignment = 0
-            self.centroids = np.mean(self.segs['TiN_MAP'])
+            self.centroids = [np.mean(self.segs['TiN_MAP'])]
 
     def perform_inference(self):
         # MAP estimation of TiN using copy number data
-        print 'calculating aSCNA based TiN estimate using data from chromosomes: ' + str(
-            np.unique(self.segs['Chromosome']) +1)
+        print('calculating aSCNA based TiN estimate using data from chromosomes: ' + str(
+            np.unique(self.segs['Chromosome']) +1))
         # calculate likelihood function for TiN in each segment
         self.calculate_TiN_likelihood()
         # perform k-means clustering on TiN segment data
         self.cluster_segments()
         if np.max(self.cluster_assignment) > 0:
-            print 'detected ' + str(np.max(self.cluster_assignment) + 1) + ' clusters'
+            print('detected ' + str(np.max(self.cluster_assignment) + 1) + ' clusters')
             self.cluster_TiN_likelihoods = [
                 np.sum(self.TiN_likelihood_matrix[self.cluster_assignment == mode_cluster, :], axis=0) for mode_cluster
                 in range(len(self.centroids))]
@@ -180,7 +181,7 @@ class model:
                 next(x[0] for x in
                      enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                      if x[1] > 0.975)]
-            print 'aSCNA based TiN estimate from selected TiN cluster :  ' + str(self.TiN)
+            print('aSCNA based TiN estimate from selected TiN cluster :  ' + str(self.TiN))
         else:
             self.TiN = self.TiN_range[np.nanargmax(np.sum(self.TiN_likelihood_matrix, axis=0))]
             self.TiN_likelihood = np.sum(self.TiN_likelihood_matrix, axis=0)
@@ -193,4 +194,4 @@ class model:
                 next(x[0] for x in
                      enumerate(np.cumsum(np.ma.masked_array(np.true_divide(posterior, np.nansum(posterior)))))
                      if x[1] > 0.975)]
-            print 'aSCNA based TiN estimate: TiN =  ' + str(self.TiN)
+            print('aSCNA based TiN estimate: TiN =  ' + str(self.TiN))

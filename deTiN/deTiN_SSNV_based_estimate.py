@@ -50,8 +50,8 @@ class model:
                 np.array(hot_spots['contig']), np.array(hot_spots['Position']))
             for index,hot_spot in hot_spots.iterrows():
                 if np.size(np.where(self.genomic_coord_x==hot_spot['genomic_coord_x'])) > 0:
-                    print 'Using user provided probabilities for cancer hot spots:'
-                    print hot_spot['Chromosome'] + ' ' + hot_spot['Position']
+                    print('Using user provided probabilities for cancer hot spots:')
+                    print(hot_spot['Chromosome'] + ' ' + hot_spot['Position'])
                     self.p_somatic[np.where(self.genomic_coord_x==hot_spot['genomic_coord_x'])] = hot_spot['Probability']
 
         # parameter
@@ -135,18 +135,18 @@ class model:
 
     def perform_inference(self):
         # perform EM procedure over
-        print 'pre-processing SSNV data'
+        print('pre-processing SSNV data')
         self.generate_conditional_ps()
         TiN_last = []
         iteration = 0
-        print 'initialized TiN to 0'
+        print('initialized TiN to 0')
         while self.TiN != TiN_last and iteration <= 100:
             iteration += 1
             TiN_last = self.TiN
             self.expectation_of_z_given_TiN()
             self.maximize_TiN_likelihood()
-            print 'TiN inference after ' + str(iteration) + ' iterations = ' + str(self.TiN_range[self.TiN])
-        print 'SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN]) + ' based on ' + str(np.sum(self.candidate_sites)) + ' sites'
+            print('TiN inference after ' + str(iteration) + ' iterations = ' + str(self.TiN_range[self.TiN]))
+        print('SSNV based TiN estimate converged: TiN = ' + str(self.TiN_range[self.TiN]) + ' based on ' + str(np.sum(self.candidate_sites)) + ' sites')
         self.TiN = self.TiN_range[self.TiN]
 
         posterior = np.exp(self.TiN_likelihood - np.nanmax(self.TiN_likelihood))
