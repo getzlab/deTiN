@@ -257,8 +257,9 @@ class output:
         # defines whether to remove events based on predicted exceeding predicted allele fractions
         # if Beta_cdf(predicted_normal_af;n_alt_count+1,n_ref_count+1) <= 0.01 we remove the variant
         self.use_outlier_threshold = input.use_outlier_removal
-        if self.input.indel_table.isnull().values.sum() == 0:
-            self.indels = self.input.indel_table
+        if self.input.indel_file != 'None':
+            if self.input.indel_table.isnull().values.sum() == 0:
+                self.indels = self.input.indel_table
 
     def calculate_joint_estimate(self):
         # do not use SSNV based estimate if it exceeds 0.3 (this estimate can be unreliable at high TiNs due to
