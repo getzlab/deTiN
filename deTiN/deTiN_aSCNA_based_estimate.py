@@ -147,7 +147,7 @@ class model:
                 self.centroids = centroids[solution_idx]
 
         else:
-            self.cluster_assignment = 0
+            self.cluster_assignment = np.zeros((self.n_segs,))
             self.centroids = [np.mean(self.segs['TiN_MAP'])]
 
     def perform_inference(self):

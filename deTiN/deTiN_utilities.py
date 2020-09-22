@@ -203,7 +203,7 @@ def plot_kmeans_info(ascna_based_model, output_path, sample_name):
     X_low = np.array(ascna_based_model.segs['TiN_ci_l'])
     X_high = np.array(ascna_based_model.segs['TiN_ci_h'])
     Y = np.array(ascna_based_model.segs['Chromosome'])
-    kIdx = np.max(ascna_based_model.cluster_assignment)
+    kIdx = int(np.max(ascna_based_model.cluster_assignment))
     K = range(1, 4)
 
     # variance explained by incorporating additional clusters
