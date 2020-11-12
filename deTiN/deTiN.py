@@ -503,7 +503,10 @@ def main():
     elif args.cn_data_path =='NULL':
         di = input(args)
         di.read_and_preprocess_SSNVs()
+
         di.candidates = du.select_candidate_mutations(di.call_stats_table, di.exac_db_file)
+        n_calls_pre = np.sum(di.candidates['judgement'] == "KEEP")
+
         ssnv_based_model = dssnv.model(di.candidates, di.mutation_prior, di.resolution, di.SSNV_af_threshold,
                                        di.coverage_threshold, di.CancerHotSpotsBED, skew = di.skew)
         ssnv_based_model.perform_inference()
