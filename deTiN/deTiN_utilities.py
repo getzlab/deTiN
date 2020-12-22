@@ -543,6 +543,10 @@ def read_indel_vcf(vcf,seg_table,indel_type):
      10: headerline[10]
     }, inplace = True)
 
+    # determine which columns corresponds to the tumor/normal
+    t_samp_ix = indel_table.columns.get_loc(tumor_sample)
+    n_samp_ix = indel_table.columns.get_loc(normal_sample)
+
     if indel_type.lower() == 'strelka':
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('DP')
@@ -577,8 +581,8 @@ def read_indel_vcf(vcf,seg_table,indel_type):
     t_ref_count = np.zeros([len(indel_table), 1])
 
     for index, row in indel_table.iterrows():
-        spl_n = row['normal'].split(':')
-        spl_t = row['tumor'].split(':')
+        spl_n = row.iloc[n_samp_ix].split(':')
+        spl_t = row.iloc[t_samp_ix].split(':')
         if indel_type.lower() == 'strelka':
             n_depth[index] = int(spl_n[depth_ix])
             n_alt_count[index] = int(spl_n[alt_indel_ix].split(',')[0])
