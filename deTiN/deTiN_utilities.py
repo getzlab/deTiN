@@ -525,13 +525,25 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         if line[0:14] == '##tumor_sample':
             tumor_sample = line.split('=')[1][0:-1]
         if line[0] == '#' and line[1] != '#':
-            headerline = line.split('\t')
+            headerline = line.rstrip().split('\t')
             break
 
+    indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
+    indel_table.rename(columns = {
+      0: 'contig',
+      1: 'position',
+      2: 'ID',
+      3: 'REF',
+      4: 'ALT',
+      5: 'QUAL',
+      6: 'filter',
+      7: 'INFO',
+      8: 'format',
+      9: headerline[9],
+     10: headerline[10]
+    }, inplace = True)
+
     if indel_type.lower() == 'strelka':
-        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
-        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO', 8: 'format', 6: 'filter', 9: headerline[9].lower(), 10: headerline[10][0:-1].lower()},
-                       inplace=True)
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('DP')
         alt_indel_ix = counts_format.index('TIR')
@@ -540,37 +552,12 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         indel_table.reset_index(inplace=True, drop=True)
 
     elif indel_type.lower() == 'mutect2':
-        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
-        # CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL
-        if tumor_sample == 'tumor' and normal_sample == 'normal':
-            indel_table.rename(
-                columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
-                         6: 'filter', 9: 'tumor', 10: 'normal'},
-                inplace=True)
-        else:
-            if tumor_sample == headerline[9]:
-                indel_table.rename(
-                        columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
-                         6: 'filter', 9: 'tumor', 10: 'normal'},
-                        inplace=True)
-            elif tumor_sample == headerline[10][0:-1]:
-                indel_table.rename(
-                    columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
-                             6: 'filter', 9: 'normal', 10: 'tumor'},
-                    inplace=True)
-            else:
-                print('failed to read MuTect 2 indels VCF')
-                sys.exit()
         counts_format = indel_table['format'][0].split(':')
         depth_ix = counts_format.index('AD')
         indel_table = indel_table[np.isfinite(is_member(indel_table['filter'], ['PASS', 'alt_allele_in_normal','artifact_in_normal']))]
         indel_table.reset_index(inplace=True, drop=True)
 
     elif indel_type.lower() == 'sanger':
-        indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
-        # CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  NORMAL  TUMOUR
-        indel_table.rename(columns={0: 'contig', 1: 'position',2:'ID',3:'REF',4:'ALT',5:'QUAL',7:'INFO',8: 'format', 6: 'filter', 9: headerline[9].lower(), 10: headerline[10][0:-1].lower()},
-                           inplace=True)
         b1 = np.logical_or.reduce([indel_table['filter'] == 'F012', indel_table['filter'] == 'F012;F015'])
         b2 = np.logical_or.reduce([indel_table['filter'] == 'PASS', indel_table['filter'] == 'F015'])
         indel_table = indel_table[np.logical_or.reduce([b1, b2])]
@@ -614,7 +601,7 @@ def read_indel_vcf(vcf,seg_table,indel_type):
             t_alt_count[index] = np.sum([int(spl_t[i]) for i in alt_count_idx])
             t_ref_count[index] = t_depth[index] - t_alt_count[index]
     if len(indel_table) == 0:
-        indel_table = pd.DataFrame(index=[0],columns=['contig', 'position','ID','REF','ALT','QUAL','INFO','format', 'filter',headerline[9].lower(), headerline[10][0:-1].lower(),
+        indel_table = pd.DataFrame(index=[0],columns=['contig', 'position','ID','REF','ALT','QUAL','INFO','format', 'filter',headerline[9], headerline[10],
                                                       't_depth','t_alt_count','t_ref_count','n_alt_count','n_depth','n_ref_count','tau','f_acs','Chromosome','genomic_coord_x'])
     else:
         indel_table['t_depth'] = t_alt_count + t_ref_count
