@@ -513,8 +513,17 @@ def read_indel_vcf(vcf,seg_table,indel_type):
         with open(vcf) as f:
             content = f.readlines()
 
+    # if the sample names were not present in the header (this VCF is technically
+    # malformed), then fallback to generic "normal" and "tumor"
+    normal_sample = "normal"
+    tumor_sample = "tumor"
     cols_type = {0: str}
     for line in content:
+        # if we can get the sample names from the header, use them instead
+        if line[0:15] == '##normal_sample':
+            normal_sample = line.split('=')[1][0:-1]
+        if line[0:14] == '##tumor_sample':
+            tumor_sample = line.split('=')[1][0:-1]
         if line[0] == '#' and line[1] != '#':
             headerline = line.split('\t')
             break
@@ -533,13 +542,6 @@ def read_indel_vcf(vcf,seg_table,indel_type):
     elif indel_type.lower() == 'mutect2':
         indel_table = pd.read_csv(vcf, sep='\t', comment='#', header=None, low_memory=False, dtype=cols_type)
         # CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	TUMOR	NORMAL
-        normal_sample = 'normal'
-        tumor_sample = 'tumor'
-        for line in content:
-            if line[0:15] == '##normal_sample':
-                normal_sample = line.split('=')[1][0:-1]
-            if line[0:14] == '##tumor_sample':
-                tumor_sample = line.split('=')[1][0:-1]
         if tumor_sample == 'tumor' and normal_sample == 'normal':
             indel_table.rename(
                 columns={0: 'contig', 1: 'position', 2: 'ID', 3: 'REF', 4: 'ALT', 5: 'QUAL', 7: 'INFO', 8: 'format',
