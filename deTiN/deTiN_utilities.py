@@ -544,8 +544,23 @@ def read_indel_vcf(vcf,seg_table,indel_type):
     }, inplace = True)
 
     # determine which columns corresponds to the tumor/normal
-    t_samp_ix = indel_table.columns.get_loc(tumor_sample)
-    n_samp_ix = indel_table.columns.get_loc(normal_sample)
+    # if the sample names don't match the column names, we assume it's because
+    # we set it to generic "tumor"/"normal" (lowercase) but the column name is
+    # capitalized. if this assumption isn't satisfied, then we fail.
+    try:
+        t_samp_ix = indel_table.columns.get_loc(tumor_sample)
+    except KeyError:
+        if "TUMOR" in indel_table.columns:
+            t_samp_ix = indel_table.columns.get_loc("TUMOR")
+        else:
+            raise KeyError("Could not infer which VCF column corresponds to the tumor!")
+    try:
+        n_samp_ix = indel_table.columns.get_loc(normal_sample)
+    except KeyError:
+        if "NORMAL" in indel_table.columns:
+            n_samp_ix = indel_table.columns.get_loc("NORMAL")
+        else:
+            raise KeyError("Could not infer which VCF column corresponds to the normal!")
 
     if indel_type.lower() == 'strelka':
         counts_format = indel_table['format'][0].split(':')
