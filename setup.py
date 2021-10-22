@@ -1,38 +1,34 @@
 import os
 import re
 from setuptools import setup, find_packages
+
 with open("deTiN/__about__.py") as reader:
     __version__ = re.search(
-        r'__version__ ?= ?[\'\"]([\w.]+)[\'\"]',
-        reader.read()
+        r"__version__ ?= ?[\'\"]([\w.]+)[\'\"]", reader.read()
     ).group(1)
 
 
 # Setup information
 setup(
-    name = 'deTiN',
-    version = __version__,
-    packages = find_packages(),
-    description = 'Somatic analysis toolkit for dealing with tumor in normal contamination',
-    author = 'Broad Institute - Cancer Genome Computational Analysis',
-    author_email = 'amaro@broadinstitute.org',
-    long_description = 'see publication',
-    entry_points = {
-        'console_scripts': [
-            'deTiN = deTiN.deTiN:main'
-        ]
-    },
-    install_requires = [
-    'numpy',
-    'matplotlib',
-    'pandas',
-    'scipy',
-    'sklearn',
-    'argparse'
+    name="deTiN",
+    version=__version__,
+    packages=find_packages(),
+    description="Somatic analysis toolkit for dealing with tumor in normal contamination",
+    author="Broad Institute - Cancer Genome Computational Analysis",
+    author_email="amaro@broadinstitute.org",
+    long_description="see publication",
+    entry_points={"console_scripts": ["deTiN = deTiN.deTiN:main"]},
+    install_requires=[
+        "numpy",
+        "matplotlib==3.1.3",
+        "pandas==1.0.0",
+        "scipy",
+        "sklearn",
+        "argparse",
     ],
-    classifiers = [
+    classifiers=[
         "Programming Language :: Python :: 2",
         "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Bio-Informatics"
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
 )
