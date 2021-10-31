@@ -25,6 +25,7 @@ setup(
         "scipy",
         "sklearn",
         "argparse",
+        "random2",
     ],
     classifiers=[
         "Programming Language :: Python :: 2",
