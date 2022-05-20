@@ -64,7 +64,7 @@ Genomic characterization is vital to the understanding and treatment of cancer. 
 
 ## Installation
 
-deTiN requires Numpy, Pandas, Scipy and Python 2.7. 
+deTiN requires Numpy, Pandas==1.0.0, matplotlib==3.1.3, Scipy, random2 and Python 3.7. 
 
 pip install deTiN
 
